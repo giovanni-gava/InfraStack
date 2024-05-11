@@ -1,0 +1,39 @@
+---
+- name: Create EC2
+  hosts: localhost
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3.9"
+	vpc_id: "vpc-02e28939544fc7e78"
+	security_group_name: "webserver-mack"
+	
+			
+  tasks:
+  
+  - name: Criar Security Group
+    amazon.aws.ec2_security_group: 
+	  name: "{{security_group_name}}"
+	  description: "Grupo de seguranca para webserver"
+	  vpc_id: "{{vpc_id}}"
+	
+  - name: Criar Segurity Group Rules
+    amazon.aws.ec2_security_group:
+      group_name: "{{security_group_name}}"
+	  protocol: tcp
+	  port: 22
+	  cidr_ip: 0.0.0.0/0
+	  
+	   
+
+  - name: iniciar instancia com ip publico
+    amazon.aws.ec2_instance:
+      name: "webserver"
+	  region: us-east-1
+      key_name: "teste-ec2-mackenzie"
+      instance_type: t2.micro
+      security_group: "{{security_group_name}}"
+      network:
+        assign_public_ip: true
+      image_id: ami-0fe630eb857a6ec83
+      tags:
+       env: dev
+	   
