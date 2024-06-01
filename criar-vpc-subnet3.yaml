@@ -1,0 +1,92 @@
+---
+- name: Criar VPC e Subnet na AWS
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-east-1
+    vpc_cidr: "10.0.0.0/16"
+    subnet_cidr: "10.0.1.0/24"
+  tasks:
+    - name: Criar VPC
+      amazon.aws.ec2_vpc_net:
+        name: minha_vpc
+        cidr_block: "{{ vpc_cidr }}"
+        region: "{{ region }}"
+        state: present
+      register: vpc
+
+    - name: VPC criada com sucesso!
+      debug:
+        msg: "VPC criada com sucesso! ID: {{ vpc.vpc.id }}"
+
+    - name: Criar Subnet
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "{{ vpc.vpc.id }}"
+        cidr: "{{ subnet_cidr }}"
+        region: "{{ region }}"
+        state: present
+      register: subnet
+
+    - name: Subnet criada com sucesso!
+      debug:
+        msg: "Subnet criada com sucesso! ID: {{ subnet.subnet.id }}"
+
+    - name: Remover VPC_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export VPC_ID='
+
+    - name: Exportar VPC ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export VPC_ID={{ vpc.vpc.id }}"
+        create: yes
+
+    - name: VPC ID exportado com sucesso!
+      debug:
+        msg: "VPC ID exportado com sucesso para .bashrc!"
+
+    - name: Remover SUBNET_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SUBNET_ID='
+
+    - name: Exportar Subnet ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_ID={{ subnet.subnet.id }}"
+        create: yes
+
+    - name: Subnet ID exportado com sucesso!
+      debug:
+        msg: "Subnet ID exportado com sucesso para .bashrc!"
+
+    - name: Remover SUBNET_CIDR existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SUBNET_CIDR='
+
+    - name: Exportar Subnet CIDR para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_CIDR={{ subnet_cidr }}"
+        create: yes
+
+    - name: Subnet CIDR exportado com sucesso!
+      debug:
+        msg: "Subnet CIDR exportado com sucesso para .bashrc!"
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "Variáveis de ambiente carregadas com sucesso!"
+
+    - name: Playbook completo
+      debug:
+        msg: "O playbook foi executado com sucesso!"
+
