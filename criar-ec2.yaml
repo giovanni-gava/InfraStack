@@ -84,14 +84,14 @@
         create: yes
       when: ec2.instances[0].public_ip_address is defined
 
-    - name: Ensure .ssh directory exists on remote server
-      command: mkdir -p .ssh
-      delegate_to: "{{ remote_host }}"
-      when: ec2.instances[0].public_ip_address is defined
+ #   - name: Ensure .ssh directory exists on remote server
+ #     command: mkdir -p .ssh
+ #     delegate_to: "{{ remote_host }}"
+ #     when: ec2.instances[0].public_ip_address is defined
 
-    - name: Copy public key to webserver
-      shell: cat /root/.ssh/id_rsa.pub | ssh root@{{ remote_host }} 'cat >> .ssh/authorized_keys'
-      when: ec2.instances[0].public_ip_address is defined
+ #   - name: Copy public key to webserver
+ #     shell: cat /root/.ssh/id_rsa.pub | ssh root@{{ remote_host }} 'cat >> .ssh/authorized_keys'
+ #    when: ec2.instances[0].public_ip_address is defined
 
     - name: Ensure webserver is in auto-scaling group
       amazon.aws.autoscaling_group:
@@ -102,7 +102,7 @@
         vpc_zone_identifier: "{{ subnet_id }}"
         launch_template:
           launch_template_name: "webserver-lt"
-        state: present
+        state: present 
 
 - name: Create Launch Template for Auto Scaling Group
   hosts: localhost
