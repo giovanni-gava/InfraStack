@@ -44,8 +44,8 @@
         security_group: "{{ sg.group_id }}"
         wait: yes
         volumes:
-        - device_name: /dev/sda1
-          ebs:
+          - device_name: /dev/sda1
+            ebs:
               volume_size: "{{ ec2_volume_size }}"
         network:
           assign_public_ip: yes
@@ -63,6 +63,8 @@
       when: ec2.instances[0].public_ip_address is defined
 
     - name: Update local /etc/hosts
+      become: yes
+      become_user: root
       lineinfile:
         path: "{{ local_host_file }}"
         regexp: '^.*\s+webserver\s*$'
@@ -72,6 +74,8 @@
       when: ec2.instances[0].public_ip_address is defined
 
     - name: Update Ansible hosts file
+      become: yes
+      become_user: root
       lineinfile:
         path: "{{ ansible_host_file }}"
         regexp: '^.*\s+webserver\s*$'
