@@ -1,32 +1,50 @@
 ---
-- name: Provision EC2 Instance with Auto Scaling Group
+- name: Provisionar Instância EC2 com Auto Scaling Group
   hosts: localhost
   gather_facts: no
   collections:
     - amazon.aws
   vars:
-    ec2_key_name: "teste-ec2-mackenzie"
+    ec2_key_name: "iac-mack"
     ec2_instance_type: "t2.micro"
-    ec2_image: "ami-0fe630eb857a6ec83"  # Substitute with the actual RedHat AMI ID
-    ec2_volume_size: 100
+    ec2_image: "ami-0fe630eb857a6ec83"  # Substituir pelo ID real da AMI do RedHat
+    ec2_volume_size: 10
     vpc_id: "{{ lookup('env', 'VPC_ID') }}"
-    security_group_name: "webserver-sg"
-    description: "Security group for webserver"
     subnet_id: "{{ lookup('env', 'SUBNET_ID') }}"
-    existing_security_group_id: "sg-0f4484ad3d4c9df77"  # ID do grupo de segurança existente
+    security_group_name: "webserver-sg"
     ansible_host_file: "/etc/ansible/hosts"
     local_host_file: "/etc/hosts"
     remote_host: "ip-servidor-remoto"
+    custom_image_name: "webserver-custom-ami"
+    custom_image_description: "Custom AMI with pre-installed Nginx"
+    ec2_custom_image: ""  # This will be set after creating the custom AMI
 
-  tasks:    
-    - name: Launch EC2 instance
+  tasks:
+    - name: Criar grupo de segurança
+      amazon.aws.ec2_group:
+        name: "{{ security_group_name }}"
+        description: Grupo de segurança para webserver
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            ports:
+              - 80
+            cidr_ip: 0.0.0.0/0
+        state: present
+      register: sg
+
+    - name: Lançar instância EC2
       amazon.aws.ec2_instance:
         name: "webserver"
         key_name: "{{ ec2_key_name }}"
         instance_type: "{{ ec2_instance_type }}"
         image_id: "{{ ec2_image }}"
         vpc_subnet_id: "{{ subnet_id }}"
-        security_group: "{{ existing_security_group_id }}"
+        security_group: "{{ sg.group_id }}"
         wait: yes
         volumes:
           - device_name: /dev/sda1
@@ -36,18 +54,57 @@
           assign_public_ip: yes
       register: ec2
 
-    - name: Debug EC2 instance details
-      debug:
-        var: ec2
+    - name: Esperar a instância estar acessível
+      wait_for:
+        host: "{{ ec2.instances[0].public_ip_address }}"
+        port: 22
+        delay: 60
+        timeout: 320
+        state: started
 
-    - name: Add new instance to host group
+    - name: Instalar Nginx na instância EC2
+      ansible.builtin.yum:
+        name: nginx
+        state: present
+      become: yes
+      vars:
+        ansible_host: "{{ ec2.instances[0].public_ip_address }}"
+        ansible_user: ec2-user
+        ansible_ssh_private_key_file: /path/to/your/private/key
+
+    - name: Iniciar e habilitar o Nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: started
+        enabled: yes
+      become: yes
+      vars:
+        ansible_host: "{{ ec2.instances[0].public_ip_address }}"
+        ansible_user: ec2-user
+        ansible_ssh_private_key_file: /path/to/your/private/key
+
+    - name: Criar AMI personalizada a partir da instância EC2
+      amazon.aws.ec2_ami:
+        instance_id: "{{ ec2.instances[0].id }}"
+        name: "{{ custom_image_name }}"
+        description: "{{ custom_image_description }}"
+        wait: yes
+      register: custom_ami
+
+    - name: Definir o ID da AMI personalizada
+      set_fact:
+        ec2_custom_image: "{{ custom_ami.image_id }}"
+
+    - name: Adicionar nova instância ao grupo de hosts
       add_host:
         name: webserver
         ansible_host: "{{ ec2.instances[0].public_ip_address }}"
-        ansible_user: root
+        ansible_user: ec2-user
       when: ec2.instances[0].public_ip_address is defined
 
-    - name: Update local /etc/hosts
+    - name: Atualizar /etc/hosts local
+      become: yes
+      become_user: root
       lineinfile:
         path: "{{ local_host_file }}"
         regexp: '^.*\s+webserver\s*$'
@@ -56,7 +113,9 @@
         create: yes
       when: ec2.instances[0].public_ip_address is defined
 
-    - name: Update Ansible hosts file
+    - name: Atualizar arquivo de hosts do Ansible
+      become: yes
+      become_user: root
       lineinfile:
         path: "{{ ansible_host_file }}"
         regexp: '^.*\s+webserver\s*$'
@@ -65,16 +124,7 @@
         create: yes
       when: ec2.instances[0].public_ip_address is defined
 
-    - name: Ensure .ssh directory exists on remote server
-      command: mkdir -p .ssh
-      delegate_to: "{{ remote_host }}"
-      when: ec2.instances[0].public_ip_address is defined
-
-    - name: Copy public key to webserver
-      shell: cat /root/.ssh/id_rsa.pub | ssh root@{{ remote_host }} 'cat >> .ssh/authorized_keys'
-      when: ec2.instances[0].public_ip_address is defined
-
-    - name: Ensure webserver is in auto-scaling group
+    - name: Garantir que o webserver esteja no grupo de auto-scaling
       amazon.aws.autoscaling_group:
         name: "webserver-asg"
         desired_capacity: 1
@@ -83,20 +133,24 @@
         vpc_zone_identifier: "{{ subnet_id }}"
         launch_template:
           launch_template_name: "webserver-lt"
-        state: present
+        state: present 
 
-- name: Create Launch Template for Auto Scaling Group
+- name: Criar Template de Lançamento para Auto Scaling Group
   hosts: localhost
   gather_facts: no
   collections:
-    - community.aws
+    - amazon.aws
   tasks:
-    - name: Create launch template
-      community.aws.ec2_launch_template:
+    - name: Criar template de lançamento
+      amazon.aws.ec2_launch_template:
         name: "webserver-lt"
-        image_id: "{{ ec2_image }}"
+        image_id: "{{ ec2_custom_image }}"
         instance_type: "{{ ec2_instance_type }}"
         key_name: "{{ ec2_key_name }}"
         security_groups:
-          - "{{ existing_security_group_id }}"
-
+          - "{{ sg.group_id }}"
+        volumes:
+          - device_name: /dev/sda1
+            ebs:
+              volume_size: "{{ ec2_volume_size }}"
+        state: present
