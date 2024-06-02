@@ -1,0 +1,122 @@
+---
+- name: Provision EC2 Instance with Auto Scaling Group
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  vars:
+    ec2_key_name: "teste-ec2-mackenzie"
+    ec2_instance_type: "t2.micro"
+    ec2_image: "ami-0fe630eb857a6ec83"  # Substitute with the actual RedHat AMI ID
+    ec2_volume_size: 100
+    vpc_id: "{{ lookup('env', 'VPC_ID') }}"
+    subnet_id: "{{ lookup('env', 'SUBNET_ID') }}"
+    security_group_name: "webserver-sg"
+    ansible_host_file: "/etc/ansible/hosts"
+    local_host_file: "/etc/hosts"
+    remote_host: "ip-servidor-remoto"
+
+  tasks:
+    - name: Create security group
+      amazon.aws.ec2_group:
+        name: "{{ security_group_name }}"
+        description: Security group for webserver
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            ports:
+              - 80
+            cidr_ip: 0.0.0.0/0
+        state: present
+      register: sg
+
+    - name: Launch EC2 instance
+      amazon.aws.ec2_instance:
+        name: "webserver"
+        key_name: "{{ ec2_key_name }}"
+        instance_type: "{{ ec2_instance_type }}"
+        image_id: "{{ ec2_image }}"
+        vpc_subnet_id: "{{ subnet_id }}"
+        security_group: "{{ sg.group_id }}"
+        wait: yes
+        volumes:
+        - device_name: /dev/sda1
+          ebs:
+              volume_size: "{{ ec2_volume_size }}"
+        network:
+          assign_public_ip: yes
+      register: ec2
+
+    - name: Debug EC2 instance details
+      debug:
+        var: ec2
+
+    - name: Add new instance to host group
+      add_host:
+        name: webserver
+        ansible_host: "{{ ec2.instances[0].public_ip_address }}"
+        ansible_user: root
+      when: ec2.instances[0].public_ip_address is defined
+
+    - name: Update local /etc/hosts
+      lineinfile:
+        path: "{{ local_host_file }}"
+        regexp: '^.*\s+webserver\s*$'
+        line: "{{ ec2.instances[0].public_ip_address }} webserver"
+        state: present
+        create: yes
+      when: ec2.instances[0].public_ip_address is defined
+
+    - name: Update Ansible hosts file
+      lineinfile:
+        path: "{{ ansible_host_file }}"
+        regexp: '^.*\s+webserver\s*$'
+        line: "webserver ansible_host={{ ec2.instances[0].public_ip_address }}"
+        state: present
+        create: yes
+      when: ec2.instances[0].public_ip_address is defined
+
+    - name: Ensure .ssh directory exists on remote server
+      command: mkdir -p .ssh
+      delegate_to: "{{ remote_host }}"
+      when: ec2.instances[0].public_ip_address is defined
+
+    - name: Copy public key to webserver
+      shell: cat /root/.ssh/id_rsa.pub | ssh root@{{ remote_host }} 'cat >> .ssh/authorized_keys'
+      when: ec2.instances[0].public_ip_address is defined
+
+    - name: Ensure webserver is in auto-scaling group
+      amazon.aws.autoscaling_group:
+        name: "webserver-asg"
+        desired_capacity: 1
+        min_size: 1
+        max_size: 3
+        vpc_zone_identifier: "{{ subnet_id }}"
+        launch_template:
+          launch_template_name: "webserver-lt"
+        state: present
+
+- name: Create Launch Template for Auto Scaling Group
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - community.aws
+  tasks:
+    - name: Create launch template
+      community.aws.ec2_launch_template:
+        name: "webserver-lt"
+        image_id: "{{ ec2_image }}"
+        instance_type: "{{ ec2_instance_type }}"
+        key_name: "{{ ec2_key_name }}"
+        security_groups:
+          - "{{ sg.group_id }}"
+        volumes:
+          - device_name: /dev/sda1
+            ebs:
+              volume_size: "{{ ec2_volume_size }}"
+        state: present
+
