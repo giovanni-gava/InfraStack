@@ -58,9 +58,13 @@
           assign_public_ip: yes
       register: ec2
 
+    - name: Depurar detalhes da instância EC2
+      debug:
+        var: ec2
+
     - name: Salvar detalhes da instância em um arquivo
       copy:
         content: |
-          instance_id: {{ ec2.instances[0].id }}
+          instance_id: {{ ec2.instances[0].instance_id }}
           public_ip_address: {{ ec2.instances[0].public_ip_address }}
         dest: ./ec2_instance_details.yml
