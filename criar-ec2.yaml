@@ -9,11 +9,21 @@
     ec2_instance_type: "t2.micro"
     ec2_image: "ami-0fe630eb857a6ec83"  # Substituir pelo ID real da AMI do RedHat
     ec2_volume_size: 10
-    vpc_id: "{{ lookup('env', 'VPC_ID') }}"
-    subnet_id: "{{ lookup('env', 'SUBNET_ID') }}"
     security_group_name: "webserver-sg"
-
   tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
+        subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
+
+    - name: Exibir variáveis carregadas
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID: {{ subnet_id }}"
+
     - name: Criar grupo de segurança
       amazon.aws.ec2_group:
         name: "{{ security_group_name }}"
@@ -54,4 +64,3 @@
           instance_id: {{ ec2.instances[0].id }}
           public_ip_address: {{ ec2.instances[0].public_ip_address }}
         dest: ./ec2_instance_details.yml
-
