@@ -10,6 +10,12 @@
     ec2_image: "ami-0fe630eb857a6ec83"  # Substituir pelo ID real da AMI do RedHat
     ec2_volume_size: 10
     security_group_name: "webserver-sg"
+    user_data: |
+      #!/bin/bash
+      yum update -y
+      amazon-linux-extras install -y nginx1
+      systemctl start nginx
+      systemctl enable nginx
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -56,6 +62,7 @@
               volume_size: "{{ ec2_volume_size }}"
         network:
           assign_public_ip: yes
+        user_data: "{{ user_data }}"
       register: ec2
 
     - name: Depurar detalhes da instância EC2
