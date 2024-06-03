@@ -75,6 +75,23 @@
       debug:
         var: ec2
 
+    - name: Aguardar a instância estar acessível via SSH
+      wait_for:
+        host: "{{ ec2.instances[0].public_ip_address }}"
+        port: 22
+        delay: 30
+        timeout: 300
+        state: started
+
+    - name: Verificar acesso SSH
+      shell: ssh -o StrictHostKeyChecking=no -i /path/to/your/private/key ec2-user@{{ ec2.instances[0].public_ip_address }} echo "SSH está funcionando"
+      register: ssh_check
+      ignore_errors: yes
+
+    - name: Mostrar resultado do SSH
+      debug:
+        var: ssh_check
+
     - name: Salvar detalhes da instância em um arquivo
       copy:
         content: |
