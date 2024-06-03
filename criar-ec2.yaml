@@ -12,8 +12,9 @@
     security_group_name: "webserver-sg"
     user_data: |
       #!/bin/bash
-      yum update -y
-      amazon-linux-extras install -y nginx1
+      dnf update -y
+      dnf upgrade -y
+      dnf install -y nginx
       systemctl start nginx
       systemctl enable nginx
   tasks:
