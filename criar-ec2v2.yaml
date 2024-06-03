@@ -139,10 +139,10 @@
   hosts: localhost
   gather_facts: no
   collections:
-    - amazon.aws
+    - community.aws
   tasks:
     - name: Criar template de lançamento
-      amazon.aws.ec2_launch_template:
+      community.aws.ec2_launch_template:
         name: "webserver-lt"
         image_id: "{{ ec2_custom_image }}"
         instance_type: "{{ ec2_instance_type }}"
