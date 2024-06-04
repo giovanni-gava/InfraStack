@@ -1,15 +1,16 @@
+---
 - name: Provisionar Instância EC2
   hosts: localhost
   gather_facts: no
   collections:
     - amazon.aws
   vars:
-    ec2_key_name: "iac-mack"
+    ec2_key_name: "{{ lookup('env', 'EC2_KEY_NAME') }}"
     ec2_instance_type: "t2.micro"
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "webserver-sg"
-    public_key_path: "/home/ec2-user/iac-mack.pem"  # Caminho para o arquivo da chave pública local
+    public_key_path: "{{ ec2_key_name }}.pem"  # Caminho para o arquivo da chave pública local
     user_data_template: |
       #!/bin/bash
       apt-get update -y
