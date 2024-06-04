@@ -84,9 +84,21 @@
       debug:
         var: ec2
 
-    - name: Salvar detalhes da instância em um arquivo
-      copy:
-        content: |
-          instance_id: {{ ec2.instances[0].instance_id }}
-          public_ip_address: {{ ec2.instances[0].public_ip_address }}
-        dest: ./ec2_instance_details.yml
+    - name: Remover variável EC2_INSTANCE_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export EC2_INSTANCE_ID='
+
+    - name: Exportar Instance ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_INSTANCE_ID={{ ec2.instances[0].instance_id }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "Instance ID exportado com sucesso para .bashrc!"
