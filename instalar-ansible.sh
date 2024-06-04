@@ -14,6 +14,11 @@ pip3 install boto3 botocore
 echo "Instalando AWS CLI..."
 pip3 install awscli
 
+# Instalar coleções Ansible Galaxy
+echo "Instalando coleções Ansible Galaxy..."
+ansible-galaxy collection install amazon.aws
+ansible-galaxy collection install community.aws
+
 # Clonar repositório do GitHub
 echo "Clonando repositório do GitHub..."
 git clone https://github.com/giovanni-gava/iac-mack.git ~/iac-mack

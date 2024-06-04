@@ -8,6 +8,11 @@ pip install ansible-core boto3 botocore awscli
 Write-Host "Instalando Git..."
 winget install -e --id Git.Git
 
+# Instalar coleções Ansible Galaxy
+Write-Host "Instalando coleções Ansible Galaxy..."
+ansible-galaxy collection install amazon.aws
+ansible-galaxy collection install community.aws
+
 # Clonar repositório do GitHub
 Write-Host "Clonando repositório do GitHub..."
 git clone https://github.com/giovanni-gava/iac-mack.git
