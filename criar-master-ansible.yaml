@@ -63,8 +63,12 @@
     - name: Exportar nome da key pair para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export EC2_KEY_NAME=~/${{ ec2_key_name }}"
+        line: "export EC2_KEY_NAME=~/{{ ec2_key_name }}.pem"
         create: yes
+
+    - name: Renderizar o user_data com a chave pública
+      set_fact:
+        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) | replace('PUBLIC_KEY_PLACEHOLDER', ec2_key.key_material) }}"
 
     - name: Criar grupo de segurança
       amazon.aws.ec2_group:
@@ -78,10 +82,6 @@
             cidr_ip: 0.0.0.0/0
         state: present
       register: sg
-
-    - name: Renderizar o user_data com a chave pública
-      set_fact:
-        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) | replace('PUBLIC_KEY_PLACEHOLDER', ec2_key.key.public_key) }}"
 
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
