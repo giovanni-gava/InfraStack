@@ -5,7 +5,6 @@
   collections:
     - amazon.aws
   vars:
-    ec2_key_name: "{{ lookup('env', 'EC2_KEY_NAME').split('.')[0] }}"
     ec2_instance_type: "t2.micro"
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
@@ -34,12 +33,13 @@
 
     - name: Setar variáveis de ambiente
       set_fact:
+        ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last).split('.')[0] }}"
         vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
         subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
 
     - name: Exibir variáveis carregadas
       debug:
-        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID: {{ subnet_id }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID: {{ subnet_id }}, EC2_KEY_NAME: {{ ec2_key_name }}"
 
     - name: Criar grupo de segurança
       amazon.aws.ec2_group:
