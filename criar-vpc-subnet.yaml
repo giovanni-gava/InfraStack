@@ -62,6 +62,7 @@
     - name: Criar rota para o tráfego de saída na tabela de roteamento principal
       amazon.aws.ec2_vpc_route_table:
         route_table_id: "{{ route_tables.route_tables[0].route_table_id }}"
+        vpc_id: "{{ vpc.vpc.id }}"
         region: "{{ region }}"
         routes:
           - dest: 0.0.0.0/0
