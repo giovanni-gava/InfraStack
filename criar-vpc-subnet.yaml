@@ -36,11 +36,15 @@
         state: present
       register: igw
 
+    - name: Verificar criação do Internet Gateway
+      debug:
+        msg: "Internet Gateway criado com sucesso! ID: {{ igw.gateway_id }}"
+
     - name: Anexar Internet Gateway à VPC
       amazon.aws.ec2_vpc_igw:
         vpc_id: "{{ vpc.vpc.id }}"
         internet_gateway_id: "{{ igw.gateway_id }}"
-        state: attached
+        state: present
       register: attach_igw
       when: igw.gateway_id is defined
 
