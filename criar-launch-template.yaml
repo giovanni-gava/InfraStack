@@ -37,11 +37,23 @@
       debug:
         var: launch_template_result
 
-    - name: Remover variável LAUNCH_TEMPLATE_ID existente do .bashrc
+    - name: Remover variáveis existentes do .bashrc
       lineinfile:
         path: ~/.bashrc
         state: absent
         regexp: '^export LAUNCH_TEMPLATE_ID='
+
+    - name: Remover variável LAUNCH_TEMPLATE_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_NAME='
+
+    - name: Remover variável LAUNCH_TEMPLATE_VERSION existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_VERSION='
 
     - name: Exportar Launch Template ID para .bashrc
       lineinfile:
@@ -49,9 +61,21 @@
         line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.default_template.launch_template_id }}"
         create: yes
 
+    - name: Exportar Launch Template Name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.default_template.launch_template_name }}"
+        create: yes
+
+    - name: Exportar Launch Template Version para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.default_template.version_number }}"
+        create: yes
+
     - name: Carregar novas variáveis de ambiente do .bashrc
       shell: source ~/.bashrc
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}"
+        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}, LAUNCH_TEMPLATE_NAME: {{ lookup('env', 'LAUNCH_TEMPLATE_NAME') }}, LAUNCH_TEMPLATE_VERSION: {{ lookup('env', 'LAUNCH_TEMPLATE_VERSION') }}"

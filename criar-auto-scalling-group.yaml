@@ -12,6 +12,8 @@
     - name: Setar variáveis de ambiente
       set_fact:
         launch_template_id: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last }}"
+        launch_template_name: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last }}"
+        launch_template_version: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last }}"
         subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
@@ -23,8 +25,9 @@
         max_size: 3
         vpc_zone_identifier: "{{ subnet_id }}"
         launch_template:
-          id: "{{ launch_template_id }}"
-          version: 1
+          launch_template_id: "{{ launch_template_id }}"
+          launch_template_name: "{{ launch_template_name }}"
+          version: "{{ launch_template_version }}"
         region: "{{ region }}"
       register: asg
 
