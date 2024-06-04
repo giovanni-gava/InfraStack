@@ -23,9 +23,9 @@ echo "Configurando credenciais da AWS..."
 mkdir -p ~/.aws
 cat <<EOF > ~/.aws/credentials
 [default]
-aws_access_key_id=$(read -p "Digite sua AWS Access Key ID: " access_key && echo $access_key)
-aws_secret_access_key=$(read -sp "Digite sua AWS Secret Access Key: " secret_key && echo $secret_key)
-region=$(read -p "Digite a região AWS (ex: us-east-1): " region && echo $region)
+AWS_ACCESS_KEY_ID=$(read -p "Digite sua AWS Access Key ID: " access_key && echo $access_key)
+AWS_SECRET_ACCESS_KEY=$(read -sp "Digite sua AWS Secret Access Key: " secret_key && echo $secret_key)
+AWS_DEFAULT_REGION=$(read -p "Digite a região AWS (ex: us-east-1): " region && echo $region)
 EOF
 
 echo "Configuração concluída com sucesso!"

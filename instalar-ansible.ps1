@@ -27,9 +27,9 @@ $secretKeyValue = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([Sys
 
 @"
 [default]
-aws_access_key_id=$accessKey
-aws_secret_access_key=$secretKeyValue
-region=$region
+AWS_ACCESS_KEY_ID=$accessKey
+AWS_SECRET_ACCESS_KEY=$secretKeyValue
+AWS_DEFAULT_REGION=$region
 "@ | Out-File -FilePath $credentialsFile -Force -Encoding ASCII
 
 Write-Host "Configuração concluída com sucesso!"
