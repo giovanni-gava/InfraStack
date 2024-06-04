@@ -3,7 +3,7 @@
   hosts: localhost
   gather_facts: no
   collections:
-    - amazon.aws
+    - community.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -17,7 +17,7 @@
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Criar Launch Template
-      amazon.aws.ec2_launch_template:
+      community.aws.ec2_launch_template:
         name: "webserver-launch-template"
         version_description: "Initial version"
         launch_template_data:
