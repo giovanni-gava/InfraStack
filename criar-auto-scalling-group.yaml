@@ -22,8 +22,7 @@
         min_size: 1
         max_size: 3
         vpc_zone_identifier: "{{ subnet_id }}"
-        launch_template:
-          id: "{{ launch_template_id }}"
+        launch_template_id: "{{ launch_template_id }}"
         region: "{{ region }}"
       register: asg
 
