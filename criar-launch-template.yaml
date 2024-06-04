@@ -20,16 +20,15 @@
       community.aws.ec2_launch_template:
         name: "webserver-launch-template"
         version_description: "Initial version"
-        launch_template_data:
-          image_id: "{{ ami_id }}"
-          instance_type: "t2.micro"
-          key_name: "{{ ec2_key_name }}"
-          security_groups: [ "{{ security_group_id }}" ]
-          block_device_mappings:
-            - device_name: "/dev/sda1"
-              ebs:
-                volume_size: 10
-                delete_on_termination: true
+        image_id: "{{ ami_id }}"
+        instance_type: "t2.micro"
+        key_name: "{{ ec2_key_name }}"
+        security_group_ids: [ "{{ security_group_id }}" ]
+        block_device_mappings:
+          - device_name: "/dev/sda1"
+            ebs:
+              volume_size: 10
+              delete_on_termination: true
         state: present
         region: "{{ region }}"
       register: launch_template
