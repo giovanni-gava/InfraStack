@@ -55,6 +55,10 @@
           association.main: "true"
       register: route_tables
 
+    - name: Depurar tabela de roteamento
+      debug:
+        var: route_tables
+
     - name: Criar rota para o tráfego de saída na tabela de roteamento principal
       amazon.aws.ec2_vpc_route_table:
         route_table_id: "{{ route_tables.route_tables[0].route_table_id }}"
