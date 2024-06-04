@@ -67,6 +67,7 @@
 
     - name: Adicionar rota local à tabela de roteamento
       amazon.aws.ec2_vpc_route_table:
+        vpc_id: "{{ vpc.vpc.id }}"
         route_table_id: "{{ route_table.route_table.id }}"
         region: "{{ region }}"
         routes:
