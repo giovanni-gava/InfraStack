@@ -10,6 +10,7 @@
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "master-ansible-sg"
+    region: "us-east-1"
     user_data_template: |
       #!/bin/bash
       apt-get update -y
@@ -62,7 +63,7 @@
     - name: Exportar nome da key pair para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export EC2_KEY_NAME=~/${{ ec2_key_name }}.pem"
+        line: "export EC2_KEY_NAME=~/${{ ec2_key_name }}"
         create: yes
 
     - name: Criar grupo de segurança
