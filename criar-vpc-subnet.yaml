@@ -33,21 +33,16 @@
 
     - name: Criar Internet Gateway
       amazon.aws.ec2_vpc_igw:
-        vpc_id: "{{ vpc.vpc.id }}"
         state: present
       register: igw
-
-    - name: Verificar criação do Internet Gateway
-      debug:
-        msg: "Internet Gateway criado com sucesso! ID: {{ igw.internet_gateway.id }}"
 
     - name: Anexar Internet Gateway à VPC
       amazon.aws.ec2_vpc_igw:
         vpc_id: "{{ vpc.vpc.id }}"
-        internet_gateway_id: "{{ igw.internet_gateway.id }}"
+        internet_gateway_id: "{{ igw.gateway_id }}"
         state: attached
       register: attach_igw
-      when: igw.internet_gateway.id is defined
+      when: igw.gateway_id is defined
 
     - name: Obter a tabela de roteamento principal da VPC
       amazon.aws.ec2_vpc_route_table_info:
@@ -62,7 +57,7 @@
         region: "{{ region }}"
         routes:
           - dest: 0.0.0.0/0
-            gateway_id: "{{ igw.internet_gateway.id }}"
+            gateway_id: "{{ igw.gateway_id }}"
         state: present
 
     - name: Remover VPC_ID existente do .bashrc
