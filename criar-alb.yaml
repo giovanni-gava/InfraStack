@@ -3,7 +3,7 @@
   hosts: localhost
   gather_facts: no
   collections:
-    - amazon.aws
+    - community.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -17,7 +17,7 @@
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Criar Load Balancer
-      amazon.aws.elb_application_lb:
+      community.aws.elb_application_lb:
         name: "webserver-alb"
         state: present
         security_groups: [ "{{ security_group_id }}" ]
@@ -27,7 +27,7 @@
       register: alb
 
     - name: Criar Target Group
-      amazon.aws.elb_target_group:
+      community.aws.elb_target_group:
         name: "webserver-tg"
         protocol: HTTP
         port: 80
@@ -39,14 +39,14 @@
       register: target_group
 
     - name: Associar Target Group ao Auto Scaling Group
-      amazon.aws.autoscaling_group:
+      community.aws.autoscaling_group:
         name: "{{ asg_name }}"
         target_group_arns: [ "{{ target_group.target_group_arn }}" ]
         region: "{{ region }}"
         state: present
 
     - name: Criar Listener
-      amazon.aws.elb_listener:
+      community.aws.elb_listener:
         name: "webserver-listener"
         load_balancer_arn: "{{ alb.load_balancer_arn }}"
         port: 80
