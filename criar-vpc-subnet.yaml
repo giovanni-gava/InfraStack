@@ -48,25 +48,36 @@
         state: present
       when: igw.gateway_id is defined
 
-    - name: Obter a tabela de roteamento principal da VPC
-      amazon.aws.ec2_vpc_route_table_info:
-        filters:
-          vpc-id: "{{ vpc.vpc.id }}"
-          association.main: "true"
-      register: route_tables
-
-    - name: Depurar tabela de roteamento
-      debug:
-        var: route_tables
-
-    - name: Criar rota para o tráfego de saída na tabela de roteamento principal
+    - name: Criar tabela de roteamento
       amazon.aws.ec2_vpc_route_table:
-        route_table_id: "{{ route_tables.route_tables[0].route_table_id }}"
+        vpc_id: "{{ vpc.vpc.id }}"
+        state: present
+      register: route_table
+
+    - name: Adicionar rota para o Internet Gateway
+      amazon.aws.ec2_vpc_route_table:
+        route_table_id: "{{ route_table.route_table_id }}"
         vpc_id: "{{ vpc.vpc.id }}"
         region: "{{ region }}"
         routes:
           - dest: 0.0.0.0/0
             gateway_id: "{{ igw.gateway_id }}"
+        state: present
+
+    - name: Adicionar rota local à tabela de roteamento
+      amazon.aws.ec2_vpc_route_table:
+        route_table_id: "{{ route_table.route_table_id }}"
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: "{{ region }}"
+        routes:
+          - dest: "{{ vpc_cidr }}"
+            target: local
+        state: present
+
+    - name: Associar tabela de roteamento à Subnet
+      amazon.aws.ec2_vpc_route_table_association:
+        route_table_id: "{{ route_table.route_table_id }}"
+        subnet_id: "{{ subnet.subnet.id }}"
         state: present
 
     - name: Remover VPC_ID existente do .bashrc
