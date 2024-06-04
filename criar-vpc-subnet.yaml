@@ -37,27 +37,28 @@
         state: present
       register: igw
 
+    - name: Verificar criação do Internet Gateway
+      debug:
+        msg: "Internet Gateway criado com sucesso! ID: {{ igw.internet_gateway.id }}"
+
     - name: Anexar Internet Gateway à VPC
       amazon.aws.ec2_vpc_igw:
         vpc_id: "{{ vpc.vpc.id }}"
         internet_gateway_id: "{{ igw.internet_gateway.id }}"
-        state: present
+        state: attached
+      register: attach_igw
       when: igw.internet_gateway.id is defined
 
     - name: Obter a tabela de roteamento principal da VPC
       amazon.aws.ec2_vpc_route_table_info:
         filters:
-          - name: vpc-id
-            values:
-              - "{{ vpc.vpc.id }}"
-          - name: association.main
-            values:
-              - "true"
+          vpc-id: "{{ vpc.vpc.id }}"
+          association.main: "true"
       register: route_tables
 
     - name: Criar rota para o tráfego de saída na tabela de roteamento principal
       amazon.aws.ec2_vpc_route_table:
-        route_table_id: "{{ route_tables.route_tables[0].id }}"
+        route_table_id: "{{ route_tables.route_tables[0].route_table_id }}"
         region: "{{ region }}"
         routes:
           - dest: 0.0.0.0/0
