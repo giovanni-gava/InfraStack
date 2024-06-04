@@ -12,7 +12,7 @@
     - name: Setar variáveis de ambiente
       set_fact:
         instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
-        region: "{{ lookup('ini', '~/.aws/credentials section=default key=AWS_DEFAULT_REGION') }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Criar AMI da instância
       amazon.aws.ec2_ami:
