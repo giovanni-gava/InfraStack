@@ -1,0 +1,41 @@
+---
+- name: Criar AMI a partir de instância EC2
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
+        region: "{{ shell_output.stdout_lines | select('search', '^AWS_DEFAULT_REGION=') | list | first | split('=') | last }}"
+
+    - name: Criar AMI da instância
+      amazon.aws.ec2_ami:
+        instance_id: "{{ instance_id }}"
+        region: "{{ region }}"
+        name: "webserver-ami"
+        state: present
+        wait: yes
+      register: ami
+
+    - name: Exibir detalhes da AMI criada
+      debug:
+        var: ami
+
+    - name: Exportar AMI ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export AMI_ID={{ ami.image_id }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "AMI_ID: {{ ami.image_id }}"
