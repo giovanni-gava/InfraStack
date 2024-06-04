@@ -44,7 +44,7 @@
       amazon.aws.ec2_vpc_igw:
         vpc_id: "{{ vpc.vpc.id }}"
         internet_gateway_id: "{{ igw.gateway_id }}"
-        state: attached
+        state: present
       when: igw.gateway_id is defined
 
     - name: Obter a tabela de roteamento principal da VPC
