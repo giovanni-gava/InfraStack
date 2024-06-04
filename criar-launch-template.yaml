@@ -31,11 +31,11 @@
               delete_on_termination: true
         state: present
         region: "{{ region }}"
-      register: launch_template
+      register: launch_template_result
 
     - name: Exibir detalhes do Launch Template criado
       debug:
-        var: launch_template
+        var: launch_template_result
 
     - name: Remover variável LAUNCH_TEMPLATE_ID existente do .bashrc
       lineinfile:
@@ -46,7 +46,7 @@
     - name: Exportar Launch Template ID para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_ID={{ launch_template.launch_template.LaunchTemplateId }}"
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.launch_template.LaunchTemplateId }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
@@ -54,4 +54,4 @@
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template.launch_template.LaunchTemplateId }}"
+        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}"
