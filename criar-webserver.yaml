@@ -35,11 +35,13 @@
       set_fact:
         ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last).split('.')[0] }}"
         vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
-        subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
+        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Exibir variáveis carregadas
       debug:
-        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID: {{ subnet_id }}, EC2_KEY_NAME: {{ ec2_key_name }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, EC2_KEY_NAME: {{ ec2_key_name }}, REGION: {{ region }}"
 
     - name: Criar grupo de segurança
       amazon.aws.ec2_group:
@@ -56,7 +58,20 @@
               - 80
             cidr_ip: 0.0.0.0/0
         state: present
+        region: "{{ region }}"
       register: sg
+
+    - name: Remover variável SG_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SG_ID='
+
+    - name: Exportar SG_ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SG_ID={{ sg.group_id }}"
+        create: yes
 
     - name: Renderizar o user_data com a chave pública
       set_fact:
@@ -68,7 +83,7 @@
         key_name: "{{ ec2_key_name }}"
         instance_type: "{{ ec2_instance_type }}"
         image_id: "{{ ec2_image }}"
-        vpc_subnet_id: "{{ subnet_id }}"
+        vpc_subnet_id: "{{ subnet_id_az1 }}"
         security_group: "{{ sg.group_id }}"
         wait: yes
         volumes:
@@ -78,6 +93,7 @@
         network:
           assign_public_ip: yes
         user_data: "{{ user_data }}"
+        region: "{{ region }}"
       register: ec2
 
     - name: Depurar detalhes da instância EC2
