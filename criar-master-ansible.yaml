@@ -14,8 +14,16 @@
       #!/bin/bash
       apt-get update -y
       apt-get upgrade -y
-      apt-get install -y ansible python3 python3-pip vim
+      apt-get install -y ansible python3 python3-pip vim git
       pip3 install boto3 botocore
+      git clone https://github.com/giovanni-gava/iac-mack.git ~/iac-mack
+      mkdir -p /root/.aws
+      cat <<EOF > /root/.aws/credentials
+      [default]
+      aws_access_key_id=insira sua aws access keyid
+      aws_secret_access_key=A insira sua aws secret key  
+      region=us-east-1
+      EOF
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -43,6 +51,12 @@
         dest: "~/{{ ec2_key_name }}.pem"
         mode: '0600'
 
+    - name: Exportar nome da key pair para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_KEY_NAME=~/${{ ec2_key_name }}.pem"
+        create: yes
+
     - name: Criar grupo de segurança
       amazon.aws.ec2_group:
         name: "{{ security_group_name }}"
@@ -58,7 +72,7 @@
 
     - name: Renderizar o user_data com a chave pública
       set_fact:
-        user_data: "{{ user_data_template }}"
+        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) }}"
 
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
@@ -88,3 +102,10 @@
           instance_id: {{ ec2.instances[0].instance_id }}
           public_ip_address: {{ ec2.instances[0].public_ip_address }}
         dest: ./master_ansible_instance_details.yml
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "Variáveis de ambiente carregadas com sucesso!"
