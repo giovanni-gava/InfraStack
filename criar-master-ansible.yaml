@@ -56,10 +56,16 @@
         mode: '0600'
       when: ec2_key.key.private_key is defined
 
+    - name: Remover variável EC2_KEY_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export EC2_KEY_NAME='
+
     - name: Exportar nome da key pair para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export EC2_KEY_NAME=~/{{ ec2_key_name }}.pem"
+        line: "export EC2_KEY_NAME={{ ec2_key_name }}"
         create: yes
 
     - name: Criar grupo de segurança
