@@ -50,10 +50,8 @@
     - name: Obter a tabela de roteamento principal da VPC
       amazon.aws.ec2_vpc_route_table_info:
         filters:
-          - name: vpc-id
-            values: ["{{ vpc.vpc.id }}"]
-          - name: association.main
-            values: ["true"]
+          vpc-id: "{{ vpc.vpc.id }}"
+          association.main: "true"
       register: route_tables
 
     - name: Depurar tabela de roteamento
