@@ -54,9 +54,13 @@
         state: present
       register: route_table
 
+    - name: Depurar tabela de roteamento criada
+      debug:
+        var: route_table
+
     - name: Adicionar rota para o Internet Gateway
       amazon.aws.ec2_vpc_route_table:
-        route_table_id: "{{ route_table.route_table_id }}"
+        route_table_id: "{{ route_table.route_table.id }}"
         vpc_id: "{{ vpc.vpc.id }}"
         region: "{{ region }}"
         routes:
@@ -66,7 +70,7 @@
 
     - name: Adicionar rota local à tabela de roteamento
       amazon.aws.ec2_vpc_route_table:
-        route_table_id: "{{ route_table.route_table_id }}"
+        route_table_id: "{{ route_table.route_table.id }}"
         vpc_id: "{{ vpc.vpc.id }}"
         region: "{{ region }}"
         routes:
@@ -80,7 +84,7 @@
         cidr: "{{ subnet_cidr }}"
         region: "{{ region }}"
         state: present
-        route_table: "{{ route_table.route_table_id }}"
+        route_table: "{{ route_table.route_table.id }}"
       register: subnet
 
     - name: Remover VPC_ID existente do .bashrc
