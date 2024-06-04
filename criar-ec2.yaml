@@ -9,7 +9,8 @@
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "webserver-sg"
-    user_data: |
+    public_key_path: "/home/ec2-user/iac-mack.pem"  # Caminho para o arquivo da chave pública local
+    user_data_template: |
       #!/bin/bash
       apt-get update -y
       apt-get upgrade -y
@@ -27,9 +28,10 @@
       systemctl start ssh
       # Adicionar chave pública ao authorized_keys
       mkdir -p /root/.ssh
-      echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC4...sua-chave-publica-ssh" >> /root/.ssh/authorized_keys
+      echo "{{ lookup('file', public_key_path) }}" >> /root/.ssh/authorized_keys
       chmod 600 /root/.ssh/authorized_keys
       chmod 700 /root/.ssh
+
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -60,6 +62,10 @@
             cidr_ip: 0.0.0.0/0
         state: present
       register: sg
+
+    - name: Renderizar o user_data com a chave pública
+      set_fact:
+        user_data: "{{ user_data_template }}"
 
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
