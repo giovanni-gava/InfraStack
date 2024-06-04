@@ -46,7 +46,13 @@
 
     - name: Obter a tabela de roteamento principal da VPC
       amazon.aws.ec2_vpc_route_table_info:
-        vpc_id: "{{ vpc.vpc.id }}"
+        filters:
+          - name: vpc-id
+            values:
+              - "{{ vpc.vpc.id }}"
+          - name: association.main
+            values:
+              - "true"
       register: route_tables
 
     - name: Criar rota para o tráfego de saída na tabela de roteamento principal
@@ -99,4 +105,20 @@
     - name: Exportar Subnet CIDR para .bashrc
       lineinfile:
         path: ~/.bashrc
-    
+        line: "export SUBNET_CIDR={{ subnet_cidr }}"
+        create: yes
+
+    - name: Subnet CIDR exportado com sucesso!
+      debug:
+        msg: "Subnet CIDR exportado com sucesso para .bashrc!"
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "Variáveis de ambiente carregadas com sucesso!"
+
+    - name: Playbook completo
+      debug:
+        msg: "O playbook foi executado com sucesso!"
