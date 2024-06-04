@@ -1,0 +1,51 @@
+---
+- name: Criar Auto Scaling Group
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        launch_template_id: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last }}"
+        subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Criar Auto Scaling Group
+      amazon.aws.autoscaling_group:
+        name: "webserver-asg"
+        desired_capacity: 2
+        min_size: 1
+        max_size: 3
+        vpc_zone_identifier: "{{ subnet_id }}"
+        launch_template:
+          id: "{{ launch_template_id }}"
+        region: "{{ region }}"
+      register: asg
+
+    - name: Exibir detalhes do Auto Scaling Group criado
+      debug:
+        var: asg
+
+    - name: Remover variável ASG_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export ASG_NAME='
+
+    - name: Exportar Auto Scaling Group name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export ASG_NAME={{ asg.name }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "ASG_NAME: {{ lookup('env', 'ASG_NAME') }}"
