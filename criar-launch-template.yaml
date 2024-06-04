@@ -1,0 +1,58 @@
+---
+- name: Criar Launch Template a partir da AMI
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        ami_id: "{{ shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
+        ec2_key_name: "{{ shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}"
+        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Criar Launch Template
+      amazon.aws.ec2_launch_template:
+        name: "webserver-launch-template"
+        version_description: "Initial version"
+        launch_template_data:
+          image_id: "{{ ami_id }}"
+          instance_type: "t2.micro"
+          key_name: "{{ ec2_key_name }}"
+          security_groups: [ "{{ security_group_id }}" ]
+          block_device_mappings:
+            - device_name: "/dev/sda1"
+              ebs:
+                volume_size: 10
+                delete_on_termination: true
+        state: present
+        region: "{{ region }}"
+      register: launch_template
+
+    - name: Exibir detalhes do Launch Template criado
+      debug:
+        var: launch_template
+
+    - name: Remover variável LAUNCH_TEMPLATE_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_ID='
+
+    - name: Exportar Launch Template ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template.launch_template_id }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template.launch_template_id }}"
