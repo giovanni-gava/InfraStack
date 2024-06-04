@@ -27,7 +27,7 @@
         region: "{{ region }}"
         state: present
         map_public: yes
-        availability_zone: "us-east-1a"
+        az: "us-east-1a"
       register: subnet_az1
 
     - name: Subnet na primeira AZ criada com sucesso!
@@ -41,7 +41,7 @@
         region: "{{ region }}"
         state: present
         map_public: yes
-        availability_zone: "us-east-1b"
+        az: "us-east-1b"
       register: subnet_az2
 
     - name: Subnet na segunda AZ criada com sucesso!
