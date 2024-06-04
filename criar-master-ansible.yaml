@@ -10,6 +10,7 @@
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "master-ansible-sg"
+    region: "us-east-1"
     user_data_template: |
       #!/bin/bash
       apt-get update -y
@@ -17,7 +18,6 @@
       apt-get install -y ansible python3 python3-pip vim git openssh-server
       pip3 install boto3 botocore
       ansible-galaxy collection install amazon.aws
-      ansible-galaxy collection install community.aws
       systemctl enable ssh
       systemctl start ssh
       git clone https://github.com/giovanni-gava/iac-mack.git ~/iac-mack
@@ -103,6 +103,7 @@
         network:
           assign_public_ip: yes
         user_data: "{{ user_data }}"
+        region: "{{ region }}"
       register: ec2
 
     - name: Depurar detalhes da instância EC2
