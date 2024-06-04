@@ -12,16 +12,18 @@
     - name: Setar variáveis de ambiente
       set_fact:
         security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
-        subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
+        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
         asg_name: "{{ shell_output.stdout_lines | select('search', '^ASG_NAME=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
 
     - name: Criar Load Balancer
       community.aws.elb_application_lb:
         name: "webserver-alb"
         state: present
         security_groups: [ "{{ security_group_id }}" ]
-        subnets: [ "{{ subnet_id }}" ]
+        subnets: [ "{{ subnet_id_az1 }}", "{{ subnet_id_az2 }}" ]
         scheme: internet-facing
         region: "{{ region }}"
       register: alb
@@ -46,18 +48,15 @@
         state: present
 
     - name: Criar Listener
-      community.aws.elb_network_lb:
-        name: "webserver-listener"
+      community.aws.elb_application_lb_listener:
         load_balancer_arn: "{{ alb.load_balancer_arn }}"
-        subnets: "{{ subnet_id }}"
-        state: present
-        listeners:
-          - protocol: HTTP
-            port: 80
-            default_actions:
-              - type: forward
-                target_group_arn: "{{ target_group.target_group_arn }}"
+        protocol: HTTP
+        port: 80
+        default_actions:
+          - type: forward
+            target_group_arn: "{{ target_group.target_group_arn }}"
         region: "{{ region }}"
+      register: listener
 
     - name: Exibir detalhes do Load Balancer
       debug:
