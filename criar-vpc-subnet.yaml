@@ -75,7 +75,7 @@
         region: "{{ region }}"
         routes:
           - dest: "{{ vpc_cidr }}"
-            local_target: local
+            local_target: true
         state: present
 
     - name: Associar tabela de roteamento à Subnet
