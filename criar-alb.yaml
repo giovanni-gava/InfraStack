@@ -1,0 +1,75 @@
+---
+- name: Criar Application Load Balancer
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        subnet_id: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID=') | list | first | split('=') | last }}"
+        asg_name: "{{ shell_output.stdout_lines | select('search', '^ASG_NAME=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Criar Load Balancer
+      amazon.aws.elb_application_lb:
+        name: "webserver-alb"
+        state: present
+        security_groups: [ "{{ security_group_id }}" ]
+        subnets: [ "{{ subnet_id }}" ]
+        scheme: internet-facing
+        region: "{{ region }}"
+      register: alb
+
+    - name: Criar Target Group
+      amazon.aws.elb_target_group:
+        name: "webserver-tg"
+        protocol: HTTP
+        port: 80
+        vpc_id: "{{ vpc_id }}"
+        health_check_protocol: HTTP
+        health_check_port: 80
+        health_check_path: /
+        region: "{{ region }}"
+      register: target_group
+
+    - name: Associar Target Group ao Auto Scaling Group
+      amazon.aws.autoscaling_group:
+        name: "{{ asg_name }}"
+        target_group_arns: [ "{{ target_group.target_group_arn }}" ]
+        region: "{{ region }}"
+        state: present
+
+    - name: Criar Listener
+      amazon.aws.elb_listener:
+        name: "webserver-listener"
+        load_balancer_arn: "{{ alb.load_balancer_arn }}"
+        port: 80
+        protocol: HTTP
+        default_actions:
+          - type: forward
+            target_group_arn: "{{ target_group.target_group_arn }}"
+        state: present
+        region: "{{ region }}"
+
+    - name: Exibir detalhes do Load Balancer
+      debug:
+        var: alb
+
+    - name: Exportar Load Balancer DNS name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export ALB_DNS_NAME={{ alb.dns_name }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: source ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "ALB_DNS_NAME: {{ lookup('env', 'ALB_DNS_NAME') }}"
