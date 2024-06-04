@@ -14,16 +14,24 @@
       #!/bin/bash
       apt-get update -y
       apt-get upgrade -y
-      apt-get install -y ansible python3 python3-pip vim git
+      apt-get install -y ansible python3 python3-pip vim git openssh-server
       pip3 install boto3 botocore
+      systemctl enable ssh
+      systemctl start ssh
       git clone https://github.com/giovanni-gava/iac-mack.git ~/iac-mack
       mkdir -p /root/.aws
       cat <<EOF > /root/.aws/credentials
       [default]
-      aws_access_key_id=insira sua aws access keyid
-      aws_secret_access_key=A insira sua aws secret key  
+      aws_access_key_id=AWS_ACCESS_KEY_ID_PLACEHOLDER
+      aws_secret_access_key=AWS_SECRET_ACCESS_KEY_PLACEHOLDER
       region=us-east-1
       EOF
+      mkdir -p /root/.ssh
+      cat <<EOK >> /root/.ssh/authorized_keys
+      PUBLIC_KEY_PLACEHOLDER
+      EOK
+      chmod 600 /root/.ssh/authorized_keys
+      chmod 700 /root/.ssh
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -72,7 +80,7 @@
 
     - name: Renderizar o user_data com a chave pública
       set_fact:
-        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) }}"
+        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) | replace('PUBLIC_KEY_PLACEHOLDER', ec2_key.key.public_key) }}"
 
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
