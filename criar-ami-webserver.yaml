@@ -12,7 +12,7 @@
     - name: Setar variáveis de ambiente
       set_fact:
         instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
-        region: "{{ shell_output.stdout_lines | select('search', '^AWS_DEFAULT_REGION=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', '~/.aws/credentials section=default key=AWS_DEFAULT_REGION') }}"
 
     - name: Criar AMI da instância
       amazon.aws.ec2_ami:
@@ -26,6 +26,12 @@
     - name: Exibir detalhes da AMI criada
       debug:
         var: ami
+
+    - name: Remover variável AMI_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export AMI_ID='
 
     - name: Exportar AMI ID para .bashrc
       lineinfile:
