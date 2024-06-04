@@ -51,9 +51,11 @@
       amazon.aws.ec2_vpc_route_table_info:
         filters:
           - name: vpc-id
-            values: ["{{ vpc.vpc.id }}"]
+            values: 
+              - "{{ vpc.vpc.id }}"
           - name: association.main
-            values: ["true"]
+            values: 
+              - "true"
       register: route_tables
 
     - name: Depurar tabela de roteamento
