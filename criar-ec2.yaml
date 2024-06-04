@@ -1,4 +1,3 @@
----
 - name: Provisionar Instância EC2
   hosts: localhost
   gather_facts: no
@@ -22,6 +21,15 @@
       systemctl start docker
       systemctl enable docker
       docker run -d -p 80:80 --name nginx nginx
+      # Garantir que o SSH esteja rodando
+      apt-get install -y openssh-server
+      systemctl enable ssh
+      systemctl start ssh
+      # Adicionar chave pública ao authorized_keys
+      mkdir -p /root/.ssh
+      echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC4...sua-chave-publica-ssh" >> /root/.ssh/authorized_keys
+      chmod 600 /root/.ssh/authorized_keys
+      chmod 700 /root/.ssh
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
