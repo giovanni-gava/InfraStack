@@ -27,12 +27,6 @@
       aws_secret_access_key=AWS_SECRET_ACCESS_KEY_PLACEHOLDER
       region=us-east-1
       EOF
-      mkdir -p /root/.ssh
-      cat <<EOK >> /root/.ssh/authorized_keys
-      PUBLIC_KEY_PLACEHOLDER
-      EOK
-      chmod 600 /root/.ssh/authorized_keys
-      chmod 700 /root/.ssh
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -53,10 +47,6 @@
         region: "{{ region }}"
         state: present
       register: ec2_key
-
-    - name: Verificar criação da chave privada
-      debug:
-        var: ec2_key
 
     - name: Salvar chave privada
       copy:
@@ -86,7 +76,7 @@
 
     - name: Renderizar o user_data com a chave pública
       set_fact:
-        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) | replace('PUBLIC_KEY_PLACEHOLDER', ec2_key.key.public_key) }}"
+        user_data: "{{ user_data_template | replace('AWS_ACCESS_KEY_ID_PLACEHOLDER', lookup('env', 'AWS_ACCESS_KEY_ID')) | replace('AWS_SECRET_ACCESS_KEY_PLACEHOLDER', lookup('env', 'AWS_SECRET_ACCESS_KEY')) }}"
 
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
