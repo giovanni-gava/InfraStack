@@ -44,7 +44,7 @@
     - name: Exportar Auto Scaling Group name para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export ASG_NAME={{ asg.name }}"
+        line: "export ASG_NAME={{ asg.auto_scaling_group_name }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
