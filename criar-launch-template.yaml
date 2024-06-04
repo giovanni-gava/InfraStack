@@ -46,7 +46,7 @@
     - name: Exportar Launch Template ID para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_ID={{ launch_template.launch_template_id }}"
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template.launch_template.LaunchTemplateId }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
@@ -54,4 +54,4 @@
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template.launch_template_id }}"
+        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template.launch_template.LaunchTemplateId }}"
