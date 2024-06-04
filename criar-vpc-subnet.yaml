@@ -79,13 +79,11 @@
         state: present
 
     - name: Associar tabela de roteamento à Subnet
-      amazon.aws.ec2_vpc_subnet:
-        vpc_id: "{{ vpc.vpc.id }}"
-        cidr: "{{ subnet_cidr }}"
-        region: "{{ region }}"
+      amazon.aws.ec2_vpc_route_table:
+        route_table_id: "{{ route_table.route_table.id }}"
+        subnets:
+          - "{{ subnet.subnet.id }}"
         state: present
-        route_table: "{{ route_table.route_table.id }}"
-      register: subnet
 
     - name: Remover VPC_ID existente do .bashrc
       lineinfile:
