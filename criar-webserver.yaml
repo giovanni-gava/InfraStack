@@ -10,7 +10,7 @@
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "webserver-sg"
-    public_key_path: "{{ ec2_key_name }}.pem"  # Caminho para o arquivo da chave pública local
+    public_key_path: "{{ ec2_key_name }}"  # Caminho para o arquivo da chave pública local
     user_data_template: |
       #!/bin/bash
       apt-get update -y
