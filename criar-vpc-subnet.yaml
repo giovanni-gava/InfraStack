@@ -50,6 +50,7 @@
 
     - name: Criar Internet Gateway
       amazon.aws.ec2_vpc_igw:
+        region: "{{ region }}"
         state: present
       register: igw
 
@@ -59,6 +60,7 @@
 
     - name: Anexar Internet Gateway à VPC
       amazon.aws.ec2_vpc_igw:
+        region: "{{ region }}"
         vpc_id: "{{ vpc.vpc.id }}"
         internet_gateway_id: "{{ igw.gateway_id }}"
         state: present
