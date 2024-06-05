@@ -7,7 +7,7 @@
     - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc && env
+      shell: . ~/.bashrc && env
       register: shell_output
 
     - name: Setar variáveis de ambiente
@@ -39,7 +39,6 @@
         health_check_port: 80
         health_check_path: /
         region: "{{ region }}"
-        state: present
       register: target_group
 
     - name: Associar Target Group ao Auto Scaling Group
@@ -50,16 +49,13 @@
         state: present
 
     - name: Criar Listener
-      community.aws.elb_application_lb:
-        name: "webserver-listener"
+      community.aws.elb_application_lb_listener:
         load_balancer_arn: "{{ alb.load_balancer_arn }}"
-        state: present
-        listeners:
-          - protocol: HTTP
-            port: 80
-            default_actions:
-              - type: forward
-                target_group_arn: "{{ target_group.target_group_arn }}"
+        protocol: HTTP
+        port: 80
+        default_actions:
+          - type: forward
+            target_group_arn: "{{ target_group.target_group_arn }}"
         region: "{{ region }}"
       register: listener
 
@@ -74,7 +70,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: . ~/.bashrc
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
