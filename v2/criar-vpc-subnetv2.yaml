@@ -1,0 +1,171 @@
+---
+- name: Criar VPC e Subnets na AWS
+  hosts: localhost
+  gather_facts: no
+  vars:
+    region: us-east-1
+    vpc_cidr: "10.0.0.0/16"
+    subnet_cidr_az1: "10.0.1.0/24"
+    subnet_cidr_az2: "10.0.2.0/24"
+  tasks:
+    - name: Criar VPC
+      amazon.aws.ec2_vpc_net:
+        name: minha_vpc
+        cidr_block: "{{ vpc_cidr }}"
+        region: "{{ region }}"
+        state: present
+      register: vpc
+
+    - name: VPC criada com sucesso!
+      debug:
+        var: vpc
+
+    - name: Criar Subnet na primeira AZ
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "{{ vpc.vpc.id }}"
+        cidr: "{{ subnet_cidr_az1 }}"
+        region: "{{ region }}"
+        state: present
+        map_public: yes
+        az: "us-east-1a"
+      register: subnet_az1
+
+    - name: Subnet na primeira AZ criada com sucesso!
+      debug:
+        var: subnet_az1
+
+    - name: Criar Subnet na segunda AZ
+      amazon.aws.ec2_vpc_subnet:
+        vpc_id: "{{ vpc.vpc.id }}"
+        cidr: "{{ subnet_cidr_az2 }}"
+        region: "{{ region }}"
+        state: present
+        map_public: yes
+        az: "us-east-1b"
+      register: subnet_az2
+
+    - name: Subnet na segunda AZ criada com sucesso!
+      debug:
+        var: subnet_az2
+
+    - name: Criar Internet Gateway
+      amazon.aws.ec2_vpc_igw:
+        region: "{{ region }}"
+        state: present
+      register: igw
+
+    - name: Verificar criação do Internet Gateway
+      debug:
+        var: igw
+
+    - name: Anexar Internet Gateway à VPC
+      amazon.aws.ec2_vpc_igw:
+        region: "{{ region }}"
+        vpc_id: "{{ vpc.vpc.id }}"
+        internet_gateway_id: "{{ igw.gateway_id }}"
+        state: present
+      when: igw.gateway_id is defined
+
+    - name: Criar e configurar a tabela de roteamento
+      amazon.aws.ec2_vpc_route_table:
+        vpc_id: "{{ vpc.vpc.id }}"
+        region: "{{ region }}"
+        state: present
+        routes:
+          - dest: 0.0.0.0/0
+            gateway_id: "{{ igw.gateway_id }}"
+          - dest: "{{ vpc_cidr }}"
+            local_target: true
+        subnets:
+          - "{{ subnet_az1.subnet.id }}"
+          - "{{ subnet_az2.subnet.id }}"
+      register: route_table
+
+    - name: Verificar tabela de roteamento criada
+      debug:
+        var: route_table
+
+    - name: Remover VPC_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export VPC_ID='
+
+    - name: Exportar VPC ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export VPC_ID={{ vpc.vpc.id }}"
+        create: yes
+
+    - name: VPC ID exportado com sucesso!
+      debug:
+        msg: "VPC ID exportado com sucesso para .bashrc!"
+
+    - name: Remover SUBNET_ID_AZ1 existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SUBNET_ID_AZ1='
+
+    - name: Exportar Subnet ID da primeira AZ para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_ID_AZ1={{ subnet_az1.subnet.id }}"
+        create: yes
+
+    - name: Subnet ID da primeira AZ exportado com sucesso!
+      debug:
+        msg: "Subnet ID da primeira AZ exportado com sucesso para .bashrc!"
+
+    - name: Remover SUBNET_ID_AZ2 existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SUBNET_ID_AZ2='
+
+    - name: Exportar Subnet ID da segunda AZ para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_ID_AZ2={{ subnet_az2.subnet.id }}"
+        create: yes
+
+    - name: Subnet ID da segunda AZ exportado com sucesso!
+      debug:
+        msg: "Subnet ID da segunda AZ exportado com sucesso para .bashrc!"
+
+    - name: Remover SUBNET_CIDR existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SUBNET_CIDR='
+
+    - name: Exportar Subnet CIDR da primeira AZ para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_CIDR_AZ1={{ subnet_cidr_az1 }}"
+        create: yes
+
+    - name: Subnet CIDR da primeira AZ exportado com sucesso!
+      debug:
+        msg: "Subnet CIDR da primeira AZ exportado com sucesso para .bashrc!"
+
+    - name: Exportar Subnet CIDR da segunda AZ para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SUBNET_CIDR_AZ2={{ subnet_cidr_az2 }}"
+        create: yes
+
+    - name: Subnet CIDR da segunda AZ exportado com sucesso!
+      debug:
+        msg: "Subnet CIDR da segunda AZ exportado com sucesso para .bashrc!"
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: bash -c "source ~/.bashrc"
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "Variáveis de ambiente carregadas com sucesso!"
+
+    - name: Playbook completo
+      debug:
+        msg: "O playbook foi executado com sucesso!"
