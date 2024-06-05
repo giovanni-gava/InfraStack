@@ -39,6 +39,7 @@
         health_check_port: 80
         health_check_path: /
         region: "{{ region }}"
+        state: present
       register: target_group
 
     - name: Associar Target Group ao Auto Scaling Group
