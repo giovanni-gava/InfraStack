@@ -4,6 +4,7 @@
   gather_facts: no
   collections:
     - community.aws
+    - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
       shell: source ~/.bashrc && env
@@ -48,13 +49,16 @@
         state: present
 
     - name: Criar Listener
-      community.aws.elb_application_lb_listener:
+      community.aws.elb_application_lb:
+        name: "webserver-listener"
         load_balancer_arn: "{{ alb.load_balancer_arn }}"
-        protocol: HTTP
-        port: 80
-        default_actions:
-          - type: forward
-            target_group_arn: "{{ target_group.target_group_arn }}"
+        state: present
+        listeners:
+          - protocol: HTTP
+            port: 80
+            default_actions:
+              - type: forward
+                target_group_arn: "{{ target_group.target_group_arn }}"
         region: "{{ region }}"
       register: listener
 
