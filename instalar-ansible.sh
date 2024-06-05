@@ -2,12 +2,11 @@
 
 # Atualizar e instalar dependências
 echo "Atualizando e instalando dependências..."
-sudo apt-get update -y
-sudo apt-get upgrade -y
-sudo apt-get install -y ansible-core python3 python3-pip git vim
+sudo dnf update -y
+sudo dnf install -y ansible-core python3 python3-pip git vim
 
-# Instalar boto3 e boto core
-echo "Instalando boto3 e boto core..."
+# Instalar boto3 e botocore
+echo "Instalando boto3 e botocore..."
 pip3 install boto3 botocore
 
 # Instalar AWS CLI

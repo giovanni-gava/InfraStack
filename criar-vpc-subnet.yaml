@@ -160,7 +160,7 @@
         msg: "Subnet CIDR da segunda AZ exportado com sucesso para .bashrc!"
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc && env"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
