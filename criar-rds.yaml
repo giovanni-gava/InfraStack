@@ -18,25 +18,25 @@
       set_fact:
         vpc_id: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: item.startswith('VPC_ID=')
+      when: "'VPC_ID=' in item"
 
     - name: Extrair SUBNET_ID_AZ1
       set_fact:
         subnet_id_az1: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: item.startswith('SUBNET_ID_AZ1=')
+      when: "'SUBNET_ID_AZ1=' in item"
 
     - name: Extrair SUBNET_ID_AZ2
       set_fact:
         subnet_id_az2: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: item.startswith('SUBNET_ID_AZ2=')
+      when: "'SUBNET_ID_AZ2=' in item"
 
     - name: Extrair SG_ID
       set_fact:
         security_group_id: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: item.startswith('SG_ID=')
+      when: "'SG_ID=' in item"
 
     - name: Setar região
       set_fact:
@@ -99,7 +99,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group.DBSubnetGroup.DBSubnetGroupName }}"
+        db_subnet_group_name: "{{ db_subnet_group.name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
