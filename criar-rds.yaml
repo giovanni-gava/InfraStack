@@ -8,15 +8,20 @@
     - name: Carregar variáveis de ambiente do .bashrc
       shell: . ~/.bashrc && env
       register: shell_output
+      ignore_errors: yes
+
+    - name: Verificar se as variáveis foram carregadas corretamente
+      debug:
+        var: shell_output
 
     - name: Setar variáveis de ambiente
       set_fact:
-        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
-        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
-        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | default('').split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | default('').split('=') | last }}"
+        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | default('').split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
-    - name: Exibir variáveis carregadas
+    - name: Verificar se as variáveis foram setadas corretamente
       debug:
         msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SG_ID: {{ security_group_id }}, REGION: {{ region }}"
 
