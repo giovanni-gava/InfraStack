@@ -12,13 +12,13 @@
 
     - name: Verificar se as variáveis foram carregadas corretamente
       debug:
-        var: shell_output
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
-        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | default('').split('=') | last }}"
-        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | default('').split('=') | last }}"
-        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | default('').split('=') | last }}"
+        vpc_id: "{{ (shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | default('VPC_ID=')) | split('=') | last }}"
+        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | default('SUBNET_ID_AZ1=')) | split('=') | last }}"
+        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | default('SG_ID=')) | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se as variáveis foram setadas corretamente
