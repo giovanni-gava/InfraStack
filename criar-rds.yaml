@@ -84,10 +84,14 @@
         state: present
       register: db_subnet_group
 
-    - name: Salvar nome do grupo de sub-redes em variável local
-      set_fact:
-        db_subnet_group_name: "{{ db_subnet_group.name }}"
-      when: db_subnet_group.name is defined
+    - name: Exportar DB Subnet Group name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export DB_SUBNET_GROUP_NAME=my-subnet-group"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: . ~/.bashrc
 
     - name: Criar RDS instance
       amazon.aws.rds_instance:
@@ -100,7 +104,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group.DBSubnetGroup.DBSubnetGroupName }}"
+        db_subnet_group_name: "{{ lookup('env', 'DB_SUBNET_GROUP_NAME') }}"
         multi_az: no
         region: "{{ region }}"
         state: present
