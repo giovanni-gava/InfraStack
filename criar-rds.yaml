@@ -99,8 +99,7 @@
         multi_az: no
         region: "{{ region }}"
         state: present
-        tags:
-          Name: "webserver-db"
+
       register: rds
 
     - name: Exibir detalhes da RDS criada
