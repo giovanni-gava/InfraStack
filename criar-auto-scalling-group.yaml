@@ -6,17 +6,26 @@
     - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
+
+    - name: Exibir saída das variáveis carregadas
+      debug:
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
-        launch_template_id: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last }}"
-        launch_template_name: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last }}"
-        launch_template_version: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last }}"
-        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
-        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
+        launch_template_id: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last) | default('') }}"
+        launch_template_name: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last) | default('') }}"
+        launch_template_version: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last) | default('') }}"
+        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last) | default('') }}"
+        subnet_id_az2: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last) | default('') }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis launch_template_id, launch_template_name, launch_template_version, subnet_id_az1 ou subnet_id_az2 estão vazias!"
+      when: launch_template_id == "" or launch_template_name == "" or launch_template_version == "" or subnet_id_az1 == "" or subnet_id_az2 == ""
 
     - name: Criar Auto Scaling Group
       amazon.aws.autoscaling_group:
@@ -49,7 +58,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
