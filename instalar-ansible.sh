@@ -3,15 +3,18 @@
 # Atualizar e instalar dependências
 echo "Atualizando e instalando dependências..."
 sudo apt-get update -y
-sudo apt install -y ansible-core python3 python3-pip git vim
+sudo apt install -y ansible-core python3 python3-pip git vim unzip
 
 # Instalar boto3 e botocore
 echo "Instalando boto3 e botocore..."
-pip3 install boto3 botocore
+sudo apt install python3-boto3
+sudo apt install python3-botocore
 
 # Instalar AWS CLI
 echo "Instalando AWS CLI..."
-pip3 install awscli
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
 
 # Instalar coleções Ansible Galaxy
 echo "Instalando coleções Ansible Galaxy..."
