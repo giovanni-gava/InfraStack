@@ -151,10 +151,6 @@
     - name: Carregar novas variáveis de ambiente do .bashrc
       shell: /bin/bash -c "source ~/.bashrc && env"
 
-    - name: Verificar se as variáveis estão atualizadas
-      debug:
-        msg: "EC2_INSTANCE_ID: {{ (new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last) | default('N/A') }}, EC2_KEY_NAME: {{ (new_shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last) | default('N/A') }}, SG_ID: {{ (new_shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('N/A') }}"
-
     - name: Verificar conteúdo do .bashrc
       shell: cat ~/.bashrc
       register: bashrc_content
