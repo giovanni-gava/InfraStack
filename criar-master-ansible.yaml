@@ -12,6 +12,9 @@
     region: "us-east-1"
     user_data_template: |
       #!/bin/bash
+      sudo dnf update -y
+      sudo dnf upgrade -y
+      sudo dnf install -y git vim
       sudo -u ec2-user git clone https://github.com/giovanni-gava/iac-mack.git /home/ec2-user/iac-mack
   tasks:
     - name: Criar par de chaves
