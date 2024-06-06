@@ -1,0 +1,90 @@
+---
+- name: Criar RDS na AWS
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: . ~/.bashrc && env
+      register: shell_output
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
+        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Exibir variáveis carregadas
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SG_ID: {{ security_group_id }}, REGION: {{ region }}"
+
+    - name: Criar grupo de segurança para RDS
+      amazon.aws.ec2_group:
+        name: "rds-security-group"
+        description: "Security group for RDS instance"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 3306
+            cidr_ip: 0.0.0.0/0
+        region: "{{ region }}"
+        state: present
+      register: rds_sg
+
+    - name: Adicionar regra de entrada para SG_ID no grupo de segurança do RDS
+      amazon.aws.ec2_group:
+        name: "{{ rds_sg.group_name }}"
+        description: "Allow access from SG_ID"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 3306
+            group_id: "{{ security_group_id }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Criar RDS instance
+      amazon.aws.rds:
+        db_instance_identifier: "my-rds-instance"
+        db_name: "mydatabase"
+        allocated_storage: 20
+        db_instance_class: db.t2.micro
+        engine: mysql
+        master_username: "admin"
+        master_user_password: "password"
+        vpc_security_group_ids:
+          - "{{ rds_sg.group_id }}"
+        db_subnet_group_name: "my-subnet-group"
+        multi_az: no
+        region: "{{ region }}"
+        state: present
+        tags:
+          Name: "my-rds-instance"
+      register: rds
+
+    - name: Exibir detalhes da RDS criada
+      debug:
+        var: rds
+
+    - name: Remover variável RDS_ENDPOINT existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export RDS_ENDPOINT='
+
+    - name: Exportar RDS endpoint para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export RDS_ENDPOINT={{ rds.endpoint }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: . ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "RDS_ENDPOINT: {{ lookup('env', 'RDS_ENDPOINT') }}"
