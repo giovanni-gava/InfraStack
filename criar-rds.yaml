@@ -95,11 +95,12 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group.name }}"
+        db_subnet_group_name: "{{ db_subnet_group.db_subnet_group['DBSubnetGroupName'] }}"
         multi_az: no
         region: "{{ region }}"
         state: present
-
+        tags:
+          Name: "webserver-db"
       register: rds
 
     - name: Exibir detalhes da RDS criada
