@@ -1,0 +1,90 @@
+---
+- name: Criar Launch Template a partir da AMI
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - community.aws
+  tasks:
+    - name: Carregar variáveis de ambiente do .bashrc
+      shell: /bin/bash -c "source ~/.bashrc && env"
+      register: shell_output
+
+    - name: Exibir saída das variáveis carregadas
+      debug:
+        var: shell_output.stdout_lines
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        ami_id: "{{ (shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last) | default('') }}"
+        ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last) | default('') }}"
+        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis ami_id, ec2_key_name ou security_group_id estão vazias!"
+      when: ami_id == "" or ec2_key_name == "" or security_group_id == ""
+
+    - name: Criar Launch Template
+      community.aws.ec2_launch_template:
+        name: "webserver-launch-template"
+        version_description: "Initial version"
+        image_id: "{{ ami_id }}"
+        instance_type: "t2.micro"
+        key_name: "{{ ec2_key_name }}"
+        security_group_ids: [ "{{ security_group_id }}" ]
+        block_device_mappings:
+          - device_name: "/dev/sda1"
+            ebs:
+              volume_size: 10
+              delete_on_termination: true
+        state: present
+        region: "{{ region }}"
+      register: launch_template_result
+
+    - name: Exibir detalhes do Launch Template criado
+      debug:
+        var: launch_template_result
+
+    - name: Remover variáveis existentes do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_ID='
+
+    - name: Remover variável LAUNCH_TEMPLATE_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_NAME='
+
+    - name: Remover variável LAUNCH_TEMPLATE_VERSION existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export LAUNCH_TEMPLATE_VERSION='
+
+    - name: Exportar Launch Template ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.default_template.launch_template_id }}"
+        create: yes
+
+    - name: Exportar Launch Template Name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.default_template.launch_template_name }}"
+        create: yes
+
+    - name: Exportar Launch Template Version para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.default_template.version_number }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: /bin/bash -c "source ~/.bashrc"
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}, LAUNCH_TEMPLATE_NAME: {{ lookup('env', 'LAUNCH_TEMPLATE_NAME') }}, LAUNCH_TEMPLATE_VERSION: {{ lookup('env', 'LAUNCH_TEMPLATE_VERSION') }}"
