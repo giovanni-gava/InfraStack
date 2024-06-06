@@ -84,9 +84,9 @@
         state: present
       register: db_subnet_group
 
-    - name: Verificar detalhes do grupo de sub-redes do RDS
-      debug:
-        var: db_subnet_group
+    - name: Salvar nome do grupo de sub-redes em variável local
+      set_fact:
+        db_subnet_group_name: "{{ db_subnet_group.name }}"
 
     - name: Criar RDS instance
       amazon.aws.rds_instance:
@@ -99,7 +99,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group.name }}"
+        db_subnet_group_name: "{{ db_subnet_group_name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
