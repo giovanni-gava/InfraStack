@@ -48,7 +48,7 @@
         state: present
 
     - name: Criar RDS instance
-      amazon.aws.rds:
+      amazon.aws.rds_instance:
         db_instance_identifier: "webserver-db"
         db_name: "webserverdb"
         allocated_storage: 20
