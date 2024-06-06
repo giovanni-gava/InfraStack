@@ -75,7 +75,7 @@
 
     - name: Criar DB Subnet Group
       amazon.aws.rds_subnet_group:
-        name: "webserver-db-subnet-group"
+        name: "my-subnet-group"
         description: "Subnet group for RDS instances"
         subnets:
           - "{{ subnet_id_az1 }}"
@@ -95,7 +95,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group.name }}"
+        db_subnet_group_name: "{{ db_subnet_group.rds_subnet_group.name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
