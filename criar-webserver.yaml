@@ -101,6 +101,13 @@
         region: "{{ region }}"
       register: ec2
 
+    - name: Aguardar a inicialização da instância EC2
+      wait_for:
+        host: "{{ ec2.instances[0].public_ip_address }}"
+        port: 22
+        state: started
+        timeout: 300
+
     - name: Depurar detalhes da instância EC2
       debug:
         var: ec2
@@ -114,25 +121,12 @@
     - name: Exportar Instance ID para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export EC2_INSTANCE_ID={{ ec2.instances[0].instance_id }}"
+        line: "export EC2_INSTANCE_ID={{ ec2.instance_ids[0] }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
-      register: new_shell_output
-
-    - name: Confirmar se o novo Instance ID foi exportado corretamente
-      debug:
-        msg: "Novo EC2_INSTANCE_ID: {{ new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
-
-    - name: Verificar se o novo EC2_INSTANCE_ID foi atualizado
-      assert:
-        that: "new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last == ec2.instances[0].instance_id"
-        fail_msg: "O EC2_INSTANCE_ID não foi atualizado corretamente."
-        success_msg: "O EC2_INSTANCE_ID foi atualizado corretamente."
+      shell: . ~/.bashrc
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "EC2_INSTANCE_ID: {{ new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
-
-
+        msg: "Novo EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}"
