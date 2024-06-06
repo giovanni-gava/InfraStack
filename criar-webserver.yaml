@@ -124,9 +124,33 @@
         line: "export EC2_INSTANCE_ID={{ ec2.instance_ids[0] }}"
         create: yes
 
+    - name: Remover variável EC2_KEY_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export EC2_KEY_NAME='
+
+    - name: Exportar Key Name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_KEY_NAME={{ ec2_key_name }}"
+        create: yes
+
+    - name: Remover variável SG_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export SG_ID='
+
+    - name: Exportar Security Group ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export SG_ID={{ sg.group_id }}"
+        create: yes
+
     - name: Carregar novas variáveis de ambiente do .bashrc
       shell: . ~/.bashrc
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "Novo EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}"
+        msg: "EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}, EC2_KEY_NAME: {{ lookup('env', 'EC2_KEY_NAME') }}, SG_ID: {{ lookup('env', 'SG_ID') }}"
