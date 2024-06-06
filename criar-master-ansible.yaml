@@ -14,10 +14,11 @@
       #!/bin/bash
       echo "Atualizando e instalando dependências..."
       sudo apt-get update -y
-      sudo apt install -y ansible-core python3 python3-pip git vim unzip
+      sudo apt-get upgrade -y
+      sudo apt-get install -y git vim unzip ansible-core python3 python3-pip
 
       echo "Instalando boto3 e botocore..."
-      sudo apt install -y python3-boto3 python3-botocore
+      sudo apt-get install -y python3-boto3 python3-botocore
 
       echo "Instalando AWS CLI..."
       curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -29,16 +30,18 @@
       ansible-galaxy collection install community.aws
 
       echo "Clonando repositório do GitHub..."
-      git clone https://github.com/giovanni-gava/iac-mack.git /home/ubuntu/iac-mack
+      sudo -u ubuntu git clone https://github.com/giovanni-gava/iac-mack.git /home/ubuntu/iac-mack
 
       echo "Configurando credenciais da AWS..."
-      mkdir -p /home/ubuntu/.aws
-      cat <<EOF > /home/ubuntu/.aws/credentials
+      sudo mkdir -p /home/ubuntu/.aws
+      cat <<EOF | sudo tee /home/ubuntu/.aws/credentials
       [default]
       AWS_ACCESS_KEY_ID=x
       AWS_SECRET_ACCESS_KEY=x
       AWS_DEFAULT_REGION=x
       EOF
+      sudo chown ubuntu:ubuntu /home/ubuntu/.aws/credentials
+      sudo chmod 600 /home/ubuntu/.aws/credentials
 
       echo "Configuração concluída com sucesso!"
   tasks:
