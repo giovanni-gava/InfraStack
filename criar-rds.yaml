@@ -91,7 +91,12 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc
+      shell: . ~/.bashrc && env
+      register: new_shell_output
+
+    - name: Verificar se a variável DB_SUBNET_GROUP_NAME foi carregada corretamente
+      debug:
+        var: new_shell_output.stdout_lines
 
     - name: Criar RDS instance
       amazon.aws.rds_instance:
