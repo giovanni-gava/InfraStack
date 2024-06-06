@@ -25,6 +25,10 @@
       sudo apt install -y openssh-server
       sudo systemctl enable ssh
       sudo systemctl start ssh
+      # Verificar se o Docker está em execução
+      sudo systemctl status docker
+      # Verificar se o container Nginx está em execução
+      sudo docker ps -a
 
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
@@ -107,3 +111,22 @@
     - name: Depurar detalhes da instância EC2
       debug:
         var: ec2
+
+    - name: Remover variável EC2_INSTANCE_ID existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export EC2_INSTANCE_ID='
+
+    - name: Exportar Instance ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_INSTANCE_ID={{ ec2.instances[0].instance_id }}"
+        create: yes
+
+    - name: Carregar novas variáveis de ambiente do .bashrc
+      shell: . ~/.bashrc
+
+    - name: Variáveis de ambiente carregadas com sucesso!
+      debug:
+        msg: "EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}"
