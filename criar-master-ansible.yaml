@@ -7,7 +7,7 @@
   vars:
     ec2_key_name: "master-ansible-key"
     ec2_instance_type: "t2.micro"
-    ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
+    ec2_image: "ami-0fe630eb857a6ec83"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     region: "us-east-1"
     user_data_template: |
