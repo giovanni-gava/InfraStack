@@ -18,19 +18,19 @@
       set_fact:
         vpc_id: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: "'VPC_ID=' in item"
+      when: item.startswith('VPC_ID=')
 
     - name: Extrair SUBNET_ID_AZ1
       set_fact:
         subnet_id_az1: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: "'SUBNET_ID_AZ1=' in item"
+      when: item.startswith('SUBNET_ID_AZ1=')
 
     - name: Extrair SG_ID
       set_fact:
         security_group_id: "{{ item.split('=')[1] }}"
       with_items: "{{ shell_output.stdout_lines }}"
-      when: "'SG_ID=' in item"
+      when: item.startswith('SG_ID=')
 
     - name: Setar região
       set_fact:
