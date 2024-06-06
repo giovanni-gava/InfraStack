@@ -99,7 +99,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ db_subnet_group['DBSubnetGroup']['DBSubnetGroupName'] }}"
+        db_subnet_group_name: "{{ db_subnet_group.name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
