@@ -7,22 +7,24 @@
   vars:
     ec2_key_name: "webserver-key"
     ec2_instance_type: "t2.micro"
-    ec2_image: "ami-0fe630eb857a6ec83"  # Substituir pelo ID da AMI Linux desejada
+    ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
     security_group_name: "webserver-sg"
     user_data_template: |
       #!/bin/bash
-      sudo dnf update -y
-      sudo dnf install -y dnf-plugins-core
-      sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-      sudo dnf install -y docker-ce docker-ce-cli containerd.io
+      sudo apt update -y
+      sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+      sudo apt update -y
+      sudo apt install -y docker-ce
       sudo systemctl start docker
       sudo systemctl enable docker
       sudo docker run -d -p 80:80 --name nginx nginx
       # Garantir que o SSH esteja rodando
-      sudo dnf install -y openssh-server
-      sudo systemctl enable sshd
-      sudo systemctl start sshd
+      sudo apt install -y openssh-server
+      sudo systemctl enable ssh
+      sudo systemctl start ssh
 
   tasks:
     - name: Criar par de chaves
@@ -97,10 +99,6 @@
         line: "export SG_ID={{ sg.group_id }}"
         create: yes
 
-    - name: Renderizar o user_data com a chave pública
-      set_fact:
-        user_data: "{{ user_data_template }}"
-
     - name: Lançar instância EC2
       amazon.aws.ec2_instance:
         name: "webserver"
@@ -116,7 +114,7 @@
               volume_size: "{{ ec2_volume_size }}"
         network:
           assign_public_ip: yes
-        user_data: "{{ user_data }}"
+        user_data: "{{ user_data_template }}"
         region: "{{ region }}"
       register: ec2
 
