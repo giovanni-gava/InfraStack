@@ -7,17 +7,26 @@
     - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
+      shell: /bin/bash -c 'source ~/.bashrc && env'
       register: shell_output
+
+    - name: Exibir conteúdo do shell_output
+      debug:
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
-        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
-        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
-        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
-        asg_name: "{{ shell_output.stdout_lines | select('search', '^ASG_NAME=') | list | first | split('=') | last }}"
-        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
-        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
+        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
+        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last) | default('') }}"
+        subnet_id_az2: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last) | default('') }}"
+        asg_name: "{{ (shell_output.stdout_lines | select('search', '^ASG_NAME=') | list | first | split('=') | last) | default('') }}"
+        region: "{{ (lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') | default('')) }}"
+        vpc_id: "{{ (shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last) | default('') }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis security_group_id, subnet_id_az1, subnet_id_az2, asg_name, region ou vpc_id estão vazias!"
+      when: security_group_id == "" or subnet_id_az1 == "" or subnet_id_az2 == "" or asg_name == "" or region == "" or vpc_id == ""
 
     - name: Criar Target Group
       community.aws.elb_target_group:
@@ -66,7 +75,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc
+      shell: /bin/bash -c 'source ~/.bashrc'
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
