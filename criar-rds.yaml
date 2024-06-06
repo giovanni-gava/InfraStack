@@ -14,11 +14,29 @@
       debug:
         var: shell_output.stdout_lines
 
-    - name: Setar variáveis de ambiente
+    - name: Extrair VPC_ID
       set_fact:
-        vpc_id: "{{ (shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | default('VPC_ID=')) | split('=') | last }}"
-        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | default('SUBNET_ID_AZ1=')) | split('=') | last }}"
-        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | default('SG_ID=')) | split('=') | last }}"
+        vpc_id: "{{ item.split('=')[1] }}"
+      when: item.startswith('VPC_ID=')
+      with_items: "{{ shell_output.stdout_lines }}"
+      register: vpc_id_result
+
+    - name: Extrair SUBNET_ID_AZ1
+      set_fact:
+        subnet_id_az1: "{{ item.split('=')[1] }}"
+      when: item.startswith('SUBNET_ID_AZ1=')
+      with_items: "{{ shell_output.stdout_lines }}"
+      register: subnet_id_az1_result
+
+    - name: Extrair SG_ID
+      set_fact:
+        security_group_id: "{{ item.split('=')[1] }}"
+      when: item.startswith('SG_ID=')
+      with_items: "{{ shell_output.stdout_lines }}"
+      register: security_group_id_result
+
+    - name: Setar região
+      set_fact:
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se as variáveis foram setadas corretamente
