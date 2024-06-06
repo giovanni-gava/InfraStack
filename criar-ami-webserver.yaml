@@ -13,6 +13,11 @@
       debug:
         var: shell_output.stdout_lines
 
+    - name: Verificar se a variável EC2_INSTANCE_ID está presente
+      fail:
+        msg: "EC2_INSTANCE_ID não encontrado no ambiente!"
+      when: shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | length == 0
+
     - name: Setar variáveis de ambiente
       set_fact:
         instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
