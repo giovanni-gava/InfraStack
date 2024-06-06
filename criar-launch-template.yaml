@@ -6,15 +6,24 @@
     - community.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
+
+    - name: Exibir saída das variáveis carregadas
+      debug:
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
-        ami_id: "{{ shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
-        ec2_key_name: "{{ shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}"
-        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        ami_id: "{{ (shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last) | default('') }}"
+        ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last) | default('') }}"
+        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis ami_id, ec2_key_name ou security_group_id estão vazias!"
+      when: ami_id == "" or ec2_key_name == "" or security_group_id == ""
 
     - name: Criar Launch Template
       community.aws.ec2_launch_template:
@@ -74,7 +83,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
