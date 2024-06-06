@@ -49,10 +49,10 @@
 
     - name: Criar RDS instance
       amazon.aws.rds:
-        db_instance_identifier: "my-rds-instance"
-        db_name: "mydatabase"
+        db_instance_identifier: "webserver-db"
+        db_name: "webserverdb"
         allocated_storage: 20
-        db_instance_class: db.t2.micro
+        db_instance_class: db.t3.micro
         engine: mysql
         master_username: "admin"
         master_user_password: "password"
@@ -63,7 +63,7 @@
         region: "{{ region }}"
         state: present
         tags:
-          Name: "my-rds-instance"
+          Name: "webserver-db"
       register: rds
 
     - name: Exibir detalhes da RDS criada

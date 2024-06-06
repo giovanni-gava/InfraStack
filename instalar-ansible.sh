@@ -2,8 +2,8 @@
 
 # Atualizar e instalar dependências
 echo "Atualizando e instalando dependências..."
-sudo dnf update -y
-sudo dnf install -y ansible-core python3 python3-pip git vim
+sudo apt-get update -y
+sudo ap -y ansible-core python3 python3-pip git vim
 
 # Instalar boto3 e botocore
 echo "Instalando boto3 e botocore..."
