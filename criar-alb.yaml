@@ -19,6 +19,18 @@
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
         vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
 
+    - name: Criar Target Group
+      community.aws.elb_target_group:
+        name: "webserver-tg"
+        protocol: HTTP
+        port: 80
+        vpc_id: "{{ vpc_id }}"
+        health_check_protocol: HTTP
+        health_check_port: 80
+        health_check_path: /
+        region: "{{ region }}"
+      register: target_group
+
     - name: Criar Load Balancer
       community.aws.elb_application_lb:
         name: "webserver-alb"
@@ -34,18 +46,6 @@
                 TargetGroupArn: "{{ target_group.target_group_arn }}"
         region: "{{ region }}"
       register: alb
-
-    - name: Criar Target Group
-      community.aws.elb_target_group:
-        name: "webserver-tg"
-        protocol: HTTP
-        port: 80
-        vpc_id: "{{ vpc_id }}"
-        health_check_protocol: HTTP
-        health_check_port: 80
-        health_check_path: /
-        region: "{{ region }}"
-      register: target_group
 
     - name: Associar Target Group ao Auto Scaling Group
       community.aws.autoscaling_group:
