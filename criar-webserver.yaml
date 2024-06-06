@@ -149,7 +149,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc && env"
 
     - name: Verificar se as variáveis estão atualizadas
       debug:
