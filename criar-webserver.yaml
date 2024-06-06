@@ -1,5 +1,5 @@
 ---
-- name: Provisionar Instância EC2
+- name: Provisionar Webserver EC2
   hosts: localhost
   gather_facts: no
   collections:
@@ -99,7 +99,7 @@
         line: "export SG_ID={{ sg.group_id }}"
         create: yes
 
-    - name: Lançar instância EC2
+    - name: Criar instância EC2
       amazon.aws.ec2_instance:
         name: "webserver"
         key_name: "{{ ec2_key_name }}"
@@ -117,6 +117,13 @@
         user_data: "{{ user_data_template }}"
         region: "{{ region }}"
       register: ec2
+
+    - name: Aguardar a inicialização da instância EC2
+      wait_for:
+        host: "{{ ec2.instances[0].public_ip_address }}"
+        port: 22
+        state: started
+        timeout: 300
 
     - name: Depurar detalhes da instância EC2
       debug:
