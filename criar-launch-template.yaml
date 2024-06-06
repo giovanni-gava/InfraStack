@@ -13,11 +13,18 @@
       debug:
         var: shell_output.stdout_lines
 
+    - name: Verificar se as variáveis AMI_ID, EC2_KEY_NAME e SG_ID estão definidas
+      fail:
+        msg: "As variáveis AMI_ID, EC2_KEY_NAME ou SG_ID não foram encontradas no .bashrc"
+      when: shell_output.stdout_lines | select('search', '^AMI_ID=') | list | length == 0 or 
+            shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | length == 0 or
+            shell_output.stdout_lines | select('search', '^SG_ID=') | list | length == 0
+
     - name: Setar variáveis de ambiente
       set_fact:
-        ami_id: "{{ (shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last) | default('') }}"
-        ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last) | default('') }}"
-        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
+        ami_id: "{{ shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
+        ec2_key_name: "{{ shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}"
+        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se as variáveis estão definidas
