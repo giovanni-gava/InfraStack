@@ -26,6 +26,12 @@
       with_items: "{{ shell_output.stdout_lines }}"
       when: item.startswith('SUBNET_ID_AZ1=')
 
+    - name: Extrair SUBNET_ID_AZ2
+      set_fact:
+        subnet_id_az2: "{{ item.split('=')[1] }}"
+      with_items: "{{ shell_output.stdout_lines }}"
+      when: item.startswith('SUBNET_ID_AZ2=')
+
     - name: Extrair SG_ID
       set_fact:
         security_group_id: "{{ item.split('=')[1] }}"
@@ -38,7 +44,7 @@
 
     - name: Verificar se as variáveis foram setadas corretamente
       debug:
-        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SG_ID: {{ security_group_id }}, REGION: {{ region }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ security_group_id }}, REGION: {{ region }}"
 
     - name: Criar grupo de segurança para RDS
       amazon.aws.ec2_group:
@@ -67,6 +73,17 @@
         region: "{{ region }}"
         state: present
 
+    - name: Criar DB Subnet Group
+      amazon.aws.rds_subnet_group:
+        name: "webserver-db-subnet-group"
+        description: "Subnet group for RDS instances"
+        subnets:
+          - "{{ subnet_id_az1 }}"
+          - "{{ subnet_id_az2 }}"
+        region: "{{ region }}"
+        state: present
+      register: db_subnet_group
+
     - name: Criar RDS instance
       amazon.aws.rds_instance:
         db_instance_identifier: "webserver-db"
@@ -78,7 +95,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "my-subnet-group"
+        db_subnet_group_name: "{{ db_subnet_group.name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
