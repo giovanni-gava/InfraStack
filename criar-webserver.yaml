@@ -118,29 +118,29 @@
         state: absent
         regexp: '^export EC2_INSTANCE_ID='
 
-    - name: Exportar Instance ID para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export EC2_INSTANCE_ID={{ ec2.instance_ids[0] }}"
-        create: yes
-
     - name: Remover variável EC2_KEY_NAME existente do .bashrc
       lineinfile:
         path: ~/.bashrc
         state: absent
         regexp: '^export EC2_KEY_NAME='
 
-    - name: Exportar Key Name para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export EC2_KEY_NAME={{ ec2_key_name }}"
-        create: yes
-
     - name: Remover variável SG_ID existente do .bashrc
       lineinfile:
         path: ~/.bashrc
         state: absent
         regexp: '^export SG_ID='
+
+    - name: Exportar Instance ID para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_INSTANCE_ID={{ ec2.instance_ids[0] }}"
+        create: yes
+
+    - name: Exportar Key Name para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_KEY_NAME={{ ec2_key_name }}"
+        create: yes
 
     - name: Exportar Security Group ID para .bashrc
       lineinfile:
@@ -149,7 +149,8 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc
+      shell: . ~/.bashrc && env
+      register: new_shell_output
 
     - name: Atualizar variáveis de ambiente no env atual
       shell: |
@@ -157,7 +158,14 @@
         export EC2_KEY_NAME={{ ec2_key_name }}
         export SG_ID={{ sg.group_id }}
 
-    - name: Variáveis de ambiente carregadas com sucesso!
+    - name: Verificar se as variáveis estão atualizadas
       debug:
         msg: "EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}, EC2_KEY_NAME: {{ lookup('env', 'EC2_KEY_NAME') }}, SG_ID: {{ lookup('env', 'SG_ID') }}"
 
+    - name: Verificar conteúdo do .bashrc
+      shell: cat ~/.bashrc
+      register: bashrc_content
+
+    - name: Exibir conteúdo do .bashrc
+      debug:
+        var: bashrc_content.stdout_lines
