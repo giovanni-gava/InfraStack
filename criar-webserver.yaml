@@ -5,6 +5,7 @@
   collections:
     - amazon.aws
   vars:
+    ec2_key_name: "webserver-key"
     ec2_instance_type: "t2.micro"
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
     ec2_volume_size: 10
@@ -27,8 +28,34 @@
       systemctl start ssh
 
   tasks:
+    - name: Criar par de chaves
+      amazon.aws.ec2_key:
+        name: "{{ ec2_key_name }}"
+        region: "{{ lookup('env', 'AWS_DEFAULT_REGION') }}"
+        state: present
+      register: ec2_key
+
+    - name: Salvar chave privada no diretório home do usuário executante
+      copy:
+        content: "{{ ec2_key.key.private_key }}"
+        dest: "{{ lookup('env', 'HOME') }}/{{ ec2_key_name }}.pem"
+        mode: '0600'
+      when: ec2_key.key.private_key is defined
+
+    - name: Remover variável EC2_KEY_NAME existente do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export EC2_KEY_NAME='
+
+    - name: Exportar nome da key pair para .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        line: "export EC2_KEY_NAME={{ ec2_key_name }}"
+        create: yes
+
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
 
     - name: Setar variáveis de ambiente
@@ -113,7 +140,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc && env"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
