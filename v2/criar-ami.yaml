@@ -14,6 +14,15 @@
         instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
+    - name: Aguardar até que a instância esteja no estado 'running' ou 'stopped'
+      amazon.aws.ec2_instance_info:
+        instance_ids: "{{ instance_id }}"
+        region: "{{ region }}"
+      register: instance_info
+      until: instance_info.instances[0].state in ['running', 'stopped']
+      retries: 10
+      delay: 30
+
     - name: Criar AMI da instância
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
