@@ -151,12 +151,6 @@
     - name: Carregar novas variáveis de ambiente do .bashrc
       shell: /bin/bash -c "source ~/.bashrc && env"
 
-    - name: Atualizar variáveis de ambiente no env atual
-      shell: |
-        export EC2_INSTANCE_ID={{ ec2.instance_ids[0] }}
-        export EC2_KEY_NAME={{ ec2_key_name }}
-        export SG_ID={{ sg.group_id }}
-
     - name: Verificar se as variáveis estão atualizadas
       debug:
         msg: "EC2_INSTANCE_ID: {{ lookup('env', 'EC2_INSTANCE_ID') }}, EC2_KEY_NAME: {{ lookup('env', 'EC2_KEY_NAME') }}, SG_ID: {{ lookup('env', 'SG_ID') }}"
