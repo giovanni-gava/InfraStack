@@ -149,8 +149,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
-      register: new_shell_output
+      shell: source ~/.bashrc
 
     - name: Verificar se as variáveis estão atualizadas
       debug:
