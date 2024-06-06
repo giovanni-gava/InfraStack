@@ -17,23 +17,20 @@
     - name: Extrair VPC_ID
       set_fact:
         vpc_id: "{{ item.split('=')[1] }}"
-      when: item.startswith('VPC_ID=')
       with_items: "{{ shell_output.stdout_lines }}"
-      register: vpc_id_result
+      when: "'VPC_ID=' in item"
 
     - name: Extrair SUBNET_ID_AZ1
       set_fact:
         subnet_id_az1: "{{ item.split('=')[1] }}"
-      when: item.startswith('SUBNET_ID_AZ1=')
       with_items: "{{ shell_output.stdout_lines }}"
-      register: subnet_id_az1_result
+      when: "'SUBNET_ID_AZ1=' in item"
 
     - name: Extrair SG_ID
       set_fact:
         security_group_id: "{{ item.split('=')[1] }}"
-      when: item.startswith('SG_ID=')
       with_items: "{{ shell_output.stdout_lines }}"
-      register: security_group_id_result
+      when: "'SG_ID=' in item"
 
     - name: Setar região
       set_fact:
