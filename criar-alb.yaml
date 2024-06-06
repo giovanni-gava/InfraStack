@@ -26,6 +26,12 @@
         security_groups: [ "{{ security_group_id }}" ]
         subnets: [ "{{ subnet_id_az1 }}", "{{ subnet_id_az2 }}" ]
         scheme: internet-facing
+        listeners:
+          - Protocol: HTTP
+            Port: 80
+            DefaultActions:
+              - Type: forward
+                TargetGroupArn: "{{ target_group.target_group_arn }}"
         region: "{{ region }}"
       register: alb
 
@@ -47,17 +53,6 @@
         target_group_arns: [ "{{ target_group.target_group_arn }}" ]
         region: "{{ region }}"
         state: present
-
-    - name: Criar Listener
-      community.aws.elb_application_lb_listener:
-        load_balancer_arn: "{{ alb.load_balancer_arn }}"
-        protocol: HTTP
-        port: 80
-        default_actions:
-          - type: forward
-            target_group_arn: "{{ target_group.target_group_arn }}"
-        region: "{{ region }}"
-      register: listener
 
     - name: Exibir detalhes do Load Balancer
       debug:
