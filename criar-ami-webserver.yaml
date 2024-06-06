@@ -6,13 +6,21 @@
     - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
+      shell: . ~/.bashrc && env
       register: shell_output
+
+    - name: Exibir conteúdo do shell_output
+      debug:
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
         instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Verificar se o EC2_INSTANCE_ID está atualizado
+      debug:
+        msg: "Instance ID atual: {{ instance_id }}"
 
     - name: Criar AMI da instância
       amazon.aws.ec2_ami:
@@ -40,7 +48,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc"
+      shell: . ~/.bashrc
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
