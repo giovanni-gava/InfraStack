@@ -16,9 +16,10 @@
     - name: Verificar se as variáveis AMI_ID, EC2_KEY_NAME e SG_ID estão definidas
       fail:
         msg: "As variáveis AMI_ID, EC2_KEY_NAME ou SG_ID não foram encontradas no .bashrc"
-      when: shell_output.stdout_lines | select('search', '^AMI_ID=') | list | length == 0 or 
-            shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | length == 0 or
-            shell_output.stdout_lines | select('search', '^SG_ID=') | list | length == 0
+      when: 
+        - shell_output.stdout_lines | select('search', '^AMI_ID=') | list | length == 0
+        - shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | length == 0
+        - shell_output.stdout_lines | select('search', '^SG_ID=') | list | length == 0
 
     - name: Setar variáveis de ambiente
       set_fact:
@@ -74,24 +75,33 @@
     - name: Exportar Launch Template ID para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.default_template.launch_template_id }}"
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.launch_template_id }}"
         create: yes
 
     - name: Exportar Launch Template Name para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.default_template.launch_template_name }}"
+        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.launch_template_name }}"
         create: yes
 
     - name: Exportar Launch Template Version para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.default_template.version_number }}"
+        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.version_number }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc"
+      shell: /bin/bash -c "source ~/.bashrc && env"
+      register: new_shell_output
 
-    - name: Variáveis de ambiente carregadas com sucesso!
+    - name: Verificar se as variáveis estão atualizadas
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}, LAUNCH_TEMPLATE_NAME: {{ lookup('env', 'LAUNCH_TEMPLATE_NAME') }}, LAUNCH_TEMPLATE_VERSION: {{ lookup('env', 'LAUNCH_TEMPLATE_VERSION') }}"
+        msg: "LAUNCH_TEMPLATE_ID: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last | default('N/A') }}, LAUNCH_TEMPLATE_NAME: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last | default('N/A') }}, LAUNCH_TEMPLATE_VERSION: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last | default('N/A') }}"
+
+    - name: Verificar conteúdo do .bashrc
+      shell: cat ~/.bashrc
+      register: bashrc_content
+
+    - name: Exibir conteúdo do .bashrc
+      debug:
+        var: bashrc_content.stdout_lines
