@@ -13,45 +13,23 @@
       debug:
         var: shell_output.stdout_lines
 
-    - name: Verificar se as variáveis AMI_ID, EC2_KEY_NAME, SG_ID e INSTANCE_ID estão definidas
-      fail:
-        msg: "As variáveis AMI_ID, EC2_KEY_NAME, SG_ID ou INSTANCE_ID não foram encontradas no .bashrc"
-      when: 
-        - shell_output.stdout_lines | select('search', '^AMI_ID=') | list | length == 0
-        - shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | length == 0
-        - shell_output.stdout_lines | select('search', '^SG_ID=') | list | length == 0
-        - shell_output.stdout_lines | select('search', '^INSTANCE_ID=') | list | length == 0
-
     - name: Setar variáveis de ambiente
       set_fact:
-        ami_id: "{{ shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
-        ec2_key_name: "{{ shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}"
-        security_group_id: "{{ shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
-        instance_id: "{{ shell_output.stdout_lines | select('search', '^INSTANCE_ID=') | list | first | split('=') | last }}"
+        ami_id: "{{ (shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last) | default('') }}"
+        ec2_key_name: "{{ (shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last) | default('') }}"
+        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se as variáveis estão definidas
       fail:
-        msg: "As variáveis ami_id, ec2_key_name, security_group_id ou instance_id estão vazias!"
-      when: ami_id == "" or ec2_key_name == "" or security_group_id == "" or instance_id == ""
-
-    - name: Criar AMI da instância
-      community.aws.ec2_ami:
-        instance_id: "{{ instance_id }}"
-        name: "MyAMI"
-        wait: yes
-        region: "{{ region }}"
-      register: ami_result
-
-    - name: Exibir detalhes da AMI criada
-      debug:
-        var: ami_result
+        msg: "As variáveis ami_id, ec2_key_name ou security_group_id estão vazias!"
+      when: ami_id == "" or ec2_key_name == "" or security_group_id == ""
 
     - name: Criar Launch Template
       community.aws.ec2_launch_template:
         name: "webserver-launch-template"
         version_description: "Initial version"
-        image_id: "{{ ami_result.image_id }}"
+        image_id: "{{ ami_id }}"
         instance_type: "t2.micro"
         key_name: "{{ ec2_key_name }}"
         security_group_ids: [ "{{ security_group_id }}" ]
@@ -67,10 +45,6 @@
     - name: Exibir detalhes do Launch Template criado
       debug:
         var: launch_template_result
-
-    - name: Verificar conteúdo do Launch Template result
-      debug:
-        msg: "{{ launch_template_result }}"
 
     - name: Remover variáveis existentes do .bashrc
       lineinfile:
@@ -93,33 +67,24 @@
     - name: Exportar Launch Template ID para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.LaunchTemplate.LaunchTemplateId }}"
+        line: "export LAUNCH_TEMPLATE_ID={{ launch_template_result.default_template.launch_template_id }}"
         create: yes
 
     - name: Exportar Launch Template Name para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.LaunchTemplate.LaunchTemplateName }}"
+        line: "export LAUNCH_TEMPLATE_NAME={{ launch_template_result.default_template.launch_template_name }}"
         create: yes
 
     - name: Exportar Launch Template Version para .bashrc
       lineinfile:
         path: ~/.bashrc
-        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.LaunchTemplate.LatestVersionNumber }}"
+        line: "export LAUNCH_TEMPLATE_VERSION={{ launch_template_result.default_template.version_number }}"
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
-      register: new_shell_output
+      shell: /bin/bash -c "source ~/.bashrc"
 
-    - name: Verificar se as variáveis estão atualizadas
+    - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last | default('N/A') }}, LAUNCH_TEMPLATE_NAME: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last | default('N/A') }}, LAUNCH_TEMPLATE_VERSION: {{ new_shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last | default('N/A') }}"
-
-    - name: Verificar conteúdo do .bashrc
-      shell: cat ~/.bashrc
-      register: bashrc_content
-
-    - name: Exibir conteúdo do .bashrc
-      debug:
-        var: bashrc_content.stdout_lines
+        msg: "LAUNCH_TEMPLATE_ID: {{ lookup('env', 'LAUNCH_TEMPLATE_ID') }}, LAUNCH_TEMPLATE_NAME: {{ lookup('env', 'LAUNCH_TEMPLATE_NAME') }}, LAUNCH_TEMPLATE_VERSION: {{ lookup('env', 'LAUNCH_TEMPLATE_VERSION') }}"
