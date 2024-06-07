@@ -38,6 +38,11 @@
           launch_template_id: "{{ launch_template_id }}"
           launch_template_name: "{{ launch_template_name }}"
           version: "{{ launch_template_version }}"
+        tags:
+          - key: "Name"
+            value: "webserver-asg-instance"
+            propagate_at_launch: true
+      
         region: "{{ region }}"
       register: asg
 
