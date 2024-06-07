@@ -8,6 +8,14 @@
     - ec2_vars.yml
     - ami_vars.yml
   tasks:
+    - name: Exibir variáveis carregadas de ec2_vars.yml
+      debug:
+        msg: "EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ security_group_id }}"
+
+    - name: Exibir variáveis carregadas de ami_vars.yml
+      debug:
+        msg: "AMI_ID: {{ ami_id }}"
+
     - name: Verificar se as variáveis estão definidas
       fail:
         msg: "As variáveis ami_id, ec2_key_name ou security_group_id não foram encontradas!"
