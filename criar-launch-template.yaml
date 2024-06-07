@@ -54,6 +54,22 @@
           sudo systemctl status docker
           # Verificar se o container Nginx está em execução
           sudo docker ps -a
+          # Adicionar logs para depuração
+          echo "Docker instalado e iniciado" >> /var/log/user-data.log
+          echo "Estado do Docker:" >> /var/log/user-data.log
+          sudo systemctl status docker >> /var/log/user-data.log
+          echo "Containers em execução:" >> /var/log/user-data.log
+          sudo docker ps -a >> /var/log/user-data.log
+          # Tentar reiniciar o container Nginx se ele não estiver rodando
+          if [ "$(sudo docker ps -a | grep nginx | grep Exited)" ]; then
+              echo "Tentando reiniciar o container Nginx" >> /var/log/user-data.log
+              sudo docker start nginx
+              echo "Estado após tentativa de reiniciar:" >> /var/log/user-data.log
+              sudo docker ps -a >> /var/log/user-data.log
+              # Capturar logs do container para depuração
+              echo "Logs do container Nginx:" >> /var/log/user-data.log
+              sudo docker logs nginx >> /var/log/user-data.log
+          fi
 
     - name: Codificar user_data_template em Base64
       set_fact:
@@ -70,15 +86,18 @@
             from_port: 80
             to_port: 80
             group_id: "{{ sg_alb_id }}"
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "0.0.0.0/0"
         state: present
       register: launch_template_sg
 
-    - name: Exportar ID do Security Group para launch_template_vars.yml
-      lineinfile:
-        path: "vars/launch_template_vars.yml"
-        line: "launch_template_sg_id: {{ launch_template_sg.group_id }}"
-        create: yes
-        state: present
+    - name: Atualizar ou adicionar ID do Security Group em launch_template_vars.yml
+      copy:
+        content: |
+          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
+        dest: "vars/launch_template_vars.yml"
 
     - name: Criar Launch Template
       community.aws.ec2_launch_template:
@@ -102,15 +121,14 @@
       debug:
         var: launch_template_result
 
-    - name: Exportar Launch Template variáveis para launch_template_vars.yml
-      lineinfile:
-        path: "vars/launch_template_vars.yml"
-        line: |
+    - name: Atualizar ou adicionar variáveis do Launch Template em launch_template_vars.yml
+      copy:
+        content: |
+          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
           launch_template_id: "{{ launch_template_result.default_template.launch_template_id }}"
           launch_template_name: "{{ launch_template_result.default_template.launch_template_name }}"
           launch_template_version: "{{ launch_template_result.default_template.version_number }}"
-        create: yes
-        state: present
+        dest: "vars/launch_template_vars.yml"
 
     - name: Carregar novas variáveis de launch_template_vars.yml
       include_vars:

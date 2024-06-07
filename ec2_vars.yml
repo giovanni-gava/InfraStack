@@ -1,3 +1,0 @@
-ec2_instance_id: "i-xxxxxxxxxxxxxxxxx"
-ec2_key_name: "webserver-key"
-sg_id: "sg-xxxxxxxx"

@@ -54,7 +54,7 @@
       copy:
         content: |
           ami_id: "{{ ami.image_id }}"
-        dest: "ami_vars.yml"
+        dest: "vars/ami_vars.yml"
 
     - name: Carregar novas variáveis de ami_vars.yml
       include_vars:

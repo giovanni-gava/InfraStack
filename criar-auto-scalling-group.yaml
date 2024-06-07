@@ -7,6 +7,7 @@
   vars_files:
     - vars/launch_template_vars.yml
     - vars/vpc_vars.yml
+    - vars/ami_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de launch_template_vars.yml
       debug:
@@ -30,7 +31,7 @@
         name: "webserver-asg"
         desired_capacity: 1
         min_size: 1
-        max_size: 3
+        max_size: 5
         vpc_zone_identifier: "{{ subnet_id_az1 }},{{ subnet_id_az2 }}"
         launch_template:
           launch_template_id: "{{ launch_template_id }}"
@@ -38,7 +39,7 @@
           version: "{{ launch_template_version }}"
         tags:
           - key: "Name"
-            value: "webserver-asg-instance"
+            value: "webserver"
             propagate_at_launch: true
         region: "{{ region }}"
       register: asg
@@ -55,8 +56,33 @@
 
     - name: Carregar novas variáveis de scaling_group_vars.yml
       include_vars:
-        file: "scaling_group_vars.yml"
+        file: "vars/scaling_group_vars.yml"
 
     - name: Variáveis de Auto Scaling Group carregadas com sucesso!
       debug:
         msg: "ASG_NAME: {{ asg_name }}"
+
+- name: Renomear instâncias após o lançamento
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  tasks:
+    - name: Esperar por instâncias estarem em estado 'running'
+      amazon.aws.ec2_instance_info:
+        filters:
+          instance-state-name: "running"
+          tag:Name: "webserver"
+      register: ec2_instances
+      until: ec2_instances.instances | length >= desired_capacity
+      retries: 10
+      delay: 30
+
+    - name: Renomear instâncias
+      amazon.aws.ec2_instance:
+        instance_id: "{{ item.instance_id }}"
+        state: present
+        name: "webserver-{{ item_index + 1 }}"
+      loop: "{{ ec2_instances.instances }}"
+      loop_control:
+        index_var: item_index
