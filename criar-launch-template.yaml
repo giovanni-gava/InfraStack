@@ -54,6 +54,10 @@
       debug:
         var: launch_template_result
 
+    - name: Verificar conteúdo do Launch Template result
+      debug:
+        msg: "{{ launch_template_result }}"
+
     - name: Remover variáveis existentes do .bashrc
       lineinfile:
         path: ~/.bashrc
