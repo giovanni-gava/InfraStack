@@ -105,7 +105,7 @@
           ec2_instance_id: "{{ ec2.instances[0].instance_id }}"
           ec2_key_name: "{{ ec2_key_name }}"
           sg_id: "{{ sg.group_id }}"
-        dest: "{{ playbook_dir }}/vars/ec2_vars.yml"
+        dest: "{{ playbook_dir }}/ec2_vars.yml"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
