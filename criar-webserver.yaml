@@ -32,12 +32,8 @@
 
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
-
-    - name: Exibir conteúdo do shell_output
-      debug:
-        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:

@@ -89,7 +89,3 @@
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
         msg: "VPC_ID: {{ new_shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}, SUBNET_ID_AZ1: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}, SUBNET_ID_AZ2: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}, SUBNET_CIDR_AZ1: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_CIDR_AZ1=') | list | first | split('=') | last }}, SUBNET_CIDR_AZ2: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_CIDR_AZ2=') | list | first | split('=') | last }}"
-
-    - name: Playbook completo
-      debug:
-        msg: "O playbook foi executado com sucesso!"
