@@ -6,7 +6,7 @@
     - amazon.aws
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
 
     - name: Exibir conteúdo do shell_output
@@ -69,8 +69,9 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc && env"
+      register: new_shell_output
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "AMI_ID: {{ lookup('env', 'AMI_ID') }}"
+        msg: "AMI_ID: {{ new_shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
