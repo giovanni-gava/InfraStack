@@ -8,6 +8,12 @@
     subnet_cidr_az1: "10.0.1.0/24"
     subnet_cidr_az2: "10.0.2.0/24"
   tasks:
+    - name: Remover variáveis existentes do .bashrc
+      lineinfile:
+        path: ~/.bashrc
+        state: absent
+        regexp: '^export VPC_ID=|^export SUBNET_ID_AZ1=|^export SUBNET_ID_AZ2=|^export SUBNET_CIDR_AZ1=|^export SUBNET_CIDR_AZ2='
+
     - name: Criar VPC
       amazon.aws.ec2_vpc_net:
         name: minha_vpc
@@ -85,86 +91,24 @@
       debug:
         var: route_table
 
-    - name: Remover VPC_ID existente do .bashrc
+    - name: Exportar variáveis para .bashrc
       lineinfile:
         path: ~/.bashrc
-        state: absent
-        regexp: '^export VPC_ID='
-
-    - name: Exportar VPC ID para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export VPC_ID={{ vpc.vpc.id }}"
         create: yes
-
-    - name: VPC ID exportado com sucesso!
-      debug:
-        msg: "VPC ID exportado com sucesso para .bashrc!"
-
-    - name: Remover SUBNET_ID_AZ1 existente do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export SUBNET_ID_AZ1='
-
-    - name: Exportar Subnet ID da primeira AZ para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export SUBNET_ID_AZ1={{ subnet_az1.subnet.id }}"
-        create: yes
-
-    - name: Subnet ID da primeira AZ exportado com sucesso!
-      debug:
-        msg: "Subnet ID da primeira AZ exportado com sucesso para .bashrc!"
-
-    - name: Remover SUBNET_ID_AZ2 existente do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export SUBNET_ID_AZ2='
-
-    - name: Exportar Subnet ID da segunda AZ para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export SUBNET_ID_AZ2={{ subnet_az2.subnet.id }}"
-        create: yes
-
-    - name: Subnet ID da segunda AZ exportado com sucesso!
-      debug:
-        msg: "Subnet ID da segunda AZ exportado com sucesso para .bashrc!"
-
-    - name: Remover SUBNET_CIDR existente do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export SUBNET_CIDR='
-
-    - name: Exportar Subnet CIDR da primeira AZ para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export SUBNET_CIDR_AZ1={{ subnet_cidr_az1 }}"
-        create: yes
-
-    - name: Subnet CIDR da primeira AZ exportado com sucesso!
-      debug:
-        msg: "Subnet CIDR da primeira AZ exportado com sucesso para .bashrc!"
-
-    - name: Exportar Subnet CIDR da segunda AZ para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export SUBNET_CIDR_AZ2={{ subnet_cidr_az2 }}"
-        create: yes
-
-    - name: Subnet CIDR da segunda AZ exportado com sucesso!
-      debug:
-        msg: "Subnet CIDR da segunda AZ exportado com sucesso para .bashrc!"
+        line: |
+          export VPC_ID={{ vpc.vpc.id }}
+          export SUBNET_ID_AZ1={{ subnet_az1.subnet.id }}
+          export SUBNET_ID_AZ2={{ subnet_az2.subnet.id }}
+          export SUBNET_CIDR_AZ1={{ subnet_cidr_az1 }}
+          export SUBNET_CIDR_AZ2={{ subnet_cidr_az2 }}
 
     - name: Carregar novas variáveis de ambiente do .bashrc
       shell: /bin/bash -c "source ~/.bashrc && env"
+      register: new_shell_output
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "Variáveis de ambiente carregadas com sucesso!"
+        msg: "VPC_ID: {{ new_shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}, SUBNET_ID_AZ1: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}, SUBNET_ID_AZ2: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}, SUBNET_CIDR_AZ1: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_CIDR_AZ1=') | list | first | split('=') | last }}, SUBNET_CIDR_AZ2: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_CIDR_AZ2=') | list | first | split('=') | last }}"
 
     - name: Playbook completo
       debug:
