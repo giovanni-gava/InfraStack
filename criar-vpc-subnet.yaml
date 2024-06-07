@@ -7,7 +7,7 @@
     vpc_cidr: "10.0.0.0/16"
     subnet_cidr_az1: "10.0.1.0/24"
     subnet_cidr_az2: "10.0.2.0/24"
-    vpc_vars_file: "/vars/vpc_vars.yml"
+    vpc_vars_file: "vars/vpc_vars.yml"
   tasks:
     - name: Criar VPC
       amazon.aws.ec2_vpc_net:

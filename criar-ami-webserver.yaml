@@ -5,7 +5,7 @@
   collections:
     - amazon.aws
   vars_files:
-    - ec2_vars.yml
+    - vars/ec2_vars.yml
   tasks:
     - name: Verificar se a variável EC2_INSTANCE_ID está presente
       fail:
@@ -58,7 +58,7 @@
 
     - name: Carregar novas variáveis de ami_vars.yml
       include_vars:
-        file: "ami_vars.yml"
+        file: "vars/ami_vars.yml"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
