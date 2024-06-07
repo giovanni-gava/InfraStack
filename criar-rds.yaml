@@ -4,47 +4,25 @@
   gather_facts: no
   collections:
     - amazon.aws
+  vars_files:
+    - vars/vpc_vars.yml
+    - vars/ec2_vars.yml
   tasks:
-    - name: Carregar variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
-      register: shell_output
-      ignore_errors: yes
-
-    - name: Verificar se as variáveis foram carregadas corretamente
+    - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
-        var: shell_output.stdout_lines
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}"
 
-    - name: Extrair VPC_ID
-      set_fact:
-        vpc_id: "{{ item.split('=')[1] }}"
-      with_items: "{{ shell_output.stdout_lines }}"
-      when: "'VPC_ID=' in item"
-
-    - name: Extrair SUBNET_ID_AZ1
-      set_fact:
-        subnet_id_az1: "{{ item.split('=')[1] }}"
-      with_items: "{{ shell_output.stdout_lines }}"
-      when: "'SUBNET_ID_AZ1=' in item"
-
-    - name: Extrair SUBNET_ID_AZ2
-      set_fact:
-        subnet_id_az2: "{{ item.split('=')[1] }}"
-      with_items: "{{ shell_output.stdout_lines }}"
-      when: "'SUBNET_ID_AZ2=' in item"
-
-    - name: Extrair SG_ID
-      set_fact:
-        security_group_id: "{{ item.split('=')[1] }}"
-      with_items: "{{ shell_output.stdout_lines }}"
-      when: "'SG_ID=' in item"
+    - name: Exibir variáveis carregadas de ec2_vars.yml
+      debug:
+        msg: "SG_ID: {{ sg_id }}"
 
     - name: Setar região
       set_fact:
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
-    - name: Verificar se as variáveis foram setadas corretamente
+    - name: Verificar se as variáveis estão setadas corretamente
       debug:
-        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ security_group_id }}, REGION: {{ region }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ sg_id }}, REGION: {{ region }}"
 
     - name: Criar grupo de segurança para RDS
       amazon.aws.ec2_group:
@@ -69,7 +47,7 @@
           - proto: tcp
             ports:
               - 3306
-            group_id: "{{ security_group_id }}"
+            group_id: "{{ sg_id }}"
         region: "{{ region }}"
         state: present
 
@@ -84,20 +62,6 @@
         state: present
       register: db_subnet_group
 
-    - name: Exportar DB Subnet Group name para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export DB_SUBNET_GROUP_NAME=my-subnet-group"
-        create: yes
-
-    - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc && env
-      register: new_shell_output
-
-    - name: Verificar se a variável DB_SUBNET_GROUP_NAME foi carregada corretamente
-      debug:
-        var: new_shell_output.stdout_lines
-
     - name: Criar RDS instance
       amazon.aws.rds_instance:
         db_instance_identifier: "webserver-db"
@@ -109,7 +73,7 @@
         master_user_password: "password"
         vpc_security_group_ids:
           - "{{ rds_sg.group_id }}"
-        db_subnet_group_name: "{{ lookup('env', 'DB_SUBNET_GROUP_NAME') }}"
+        db_subnet_group_name: "{{ db_subnet_group.name }}"
         multi_az: no
         region: "{{ region }}"
         state: present
@@ -121,21 +85,10 @@
       debug:
         var: rds
 
-    - name: Remover variável RDS_ENDPOINT existente do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export RDS_ENDPOINT='
-
-    - name: Exportar RDS endpoint para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export RDS_ENDPOINT={{ rds.endpoint }}"
-        create: yes
-
-    - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: . ~/.bashrc
-
-    - name: Variáveis de ambiente carregadas com sucesso!
-      debug:
-        msg: "RDS_ENDPOINT: {{ lookup('env', 'RDS_ENDPOINT') }}"
+    - name: Exportar variáveis criadas para rds_vars.yml
+      copy:
+        content: |
+          rds_security_group_id: "{{ rds_sg.group_id }}"
+          rds_subnet_group_name: "{{ db_subnet_group.name }}"
+          rds_endpoint: "{{ rds.endpoint }}"
+        dest: "vars/rds_vars.yml"

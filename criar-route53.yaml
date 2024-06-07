@@ -1,0 +1,44 @@
+---
+- name: Configurar Route 53 privado para traduzir nome de ALB público
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  vars_files:
+    - vars/alb_vars.yml
+  tasks:
+    - name: Exibir variáveis carregadas de alb_vars.yml
+      debug:
+        msg: "ALB_DNS_NAME: {{ alb_dns_name }}"
+
+    - name: Verificar se a variável alb_dns_name está definida
+      fail:
+        msg: "A variável alb_dns_name não foi encontrada!"
+      when: alb_dns_name is not defined
+
+    - name: Criar zona hospedada privada no Route 53
+      amazon.aws.route53_zone:
+        state: present
+        name: "example.com" # Substitua pelo nome de domínio desejado
+        vpc_id: "{{ vpc_id }}" # Adicione o ID da VPC onde a zona privada será criada
+        vpc_region: "{{ region }}"
+        private_zone: true
+      register: route53_zone
+
+    - name: Exibir detalhes da zona hospedada criada
+      debug:
+        var: route53_zone
+
+    - name: Criar registro A para o ALB no Route 53
+      amazon.aws.route53_record:
+        state: present
+        zone: "{{ route53_zone.zone.id }}"
+        record: "www.iacmack.com.br" # Substitua pelo nome do subdomínio desejado
+        type: A
+        ttl: 300
+        value: "{{ alb_dns_name }}"
+      register: route53_record
+
+    - name: Exibir detalhes do registro criado
+      debug:
+        var: route53_record
