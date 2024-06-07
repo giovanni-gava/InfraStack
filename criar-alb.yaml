@@ -7,7 +7,6 @@
     - amazon.aws
   vars_files:
     - vpc_vars.yml
-    - ec2_vars.yml
     - scaling_group_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de vpc_vars.yml
@@ -30,8 +29,13 @@
         port: 80
         vpc_id: "{{ vpc_id }}"
         health_check_protocol: HTTP
-        health_check_port: 80
+        health_check_port: traffic-port
         health_check_path: /
+        health_check_interval_seconds: 30
+        health_check_timeout_seconds: 5
+        healthy_threshold_count: 2
+        unhealthy_threshold_count: 2
+        target_type: instance
         region: "{{ region }}"
         state: present
       register: target_group
