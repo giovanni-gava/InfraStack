@@ -27,6 +27,22 @@
       debug:
         msg: "Instance ID atual: {{ instance_id }}"
 
+    - name: Verificar o estado da instância EC2
+      amazon.aws.ec2_instance_info:
+        instance_ids: "{{ instance_id }}"
+        region: "{{ region }}"
+      register: ec2_info
+
+    - name: Exibir estado da instância
+      debug:
+        var: ec2_info.instances[0].state.name
+
+    - name: Aguardar a instância estar no estado 'running' ou 'stopped'
+      wait_for:
+        timeout: 600
+        state: present
+      when: ec2_info.instances[0].state.name != 'running' and ec2_info.instances[0].state.name != 'stopped'
+
     - name: Criar AMI da instância
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
