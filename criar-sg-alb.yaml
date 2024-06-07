@@ -1,0 +1,46 @@
+---
+- name: Criar Security Group para ALB
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  vars_files:
+    - vars/vpc_vars.yml
+  tasks:
+    - name: Exibir variáveis carregadas de vpc_vars.yml
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis vpc_id, subnet_id_az1 ou subnet_id_az2 estão vazias!"
+      when: vpc_id == "" or subnet_id_az1 == "" or subnet_id_az2 == ""
+
+    - name: Criar Security Group para ALB
+      amazon.aws.ec2_group:
+        name: "alb-webserver-sg"
+        description: "Security group for ALB"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "0.0.0.0/0"
+          - proto: tcp
+            from_port: 443
+            to_port: 443
+            cidr_ip: "0.0.0.0/0"
+        rules_egress:
+          - proto: -1
+            from_port: -1
+            to_port: -1
+            cidr_ip: "0.0.0.0/0"
+        state: present
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+      register: alb_security_group
+
+    - name: Salvar ID do Security Group no arquivo alb_vars.yml
+      copy:
+        content: |
+          sg_alb_id: "{{ alb_security_group.group_id }}"
+        dest: vars/alb_vars.yml

@@ -4,9 +4,12 @@
   gather_facts: no
   collections:
     - community.aws
+    - amazon.aws
   vars_files:
     - vars/ec2_vars.yml
     - vars/ami_vars.yml
+    - vars/alb_vars.yml
+    - vars/vpc_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de ec2_vars.yml
       debug:
@@ -16,14 +19,66 @@
       debug:
         msg: "AMI_ID: {{ ami_id }}"
 
+    - name: Exibir variáveis carregadas de alb_vars.yml
+      debug:
+        msg: "SG_ALB_ID: {{ sg_alb_id }}"
+
+    - name: Exibir variáveis carregadas de vpc_vars.yml
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}"
+
     - name: Verificar se as variáveis estão definidas
       fail:
-        msg: "As variáveis ami_id, ec2_key_name ou sg_id não foram encontradas!"
-      when: ami_id is not defined or ec2_key_name is not defined or sg_id is not defined
+        msg: "As variáveis ami_id, ec2_key_name, sg_id, sg_alb_id ou vpc_id não foram encontradas!"
+      when: ami_id is not defined or ec2_key_name is not defined or sg_id is not defined or sg_alb_id is not defined or vpc_id is not defined
 
     - name: Setar variáveis de ambiente
       set_fact:
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+        user_data_template: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt update -y
+          sudo apt install -y docker-ce
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo docker run -d -p 80:80 --name nginx nginx
+          # Garantir que o SSH esteja rodando
+          sudo apt install -y openssh-server
+          sudo systemctl enable ssh
+          sudo systemctl start ssh
+          # Verificar se o Docker está em execução
+          sudo systemctl status docker
+          # Verificar se o container Nginx está em execução
+          sudo docker ps -a
+
+    - name: Codificar user_data_template em Base64
+      set_fact:
+        user_data_base64: "{{ user_data_template | b64encode }}"
+
+    - name: Criar novo Security Group para o Launch Template
+      amazon.aws.ec2_group:
+        name: "lt-webserver-sg"
+        description: "Security group for Launch Template"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            group_id: "{{ sg_alb_id }}"
+        state: present
+      register: launch_template_sg
+
+    - name: Exportar ID do Security Group para launch_template_vars.yml
+      lineinfile:
+        path: "vars/launch_template_vars.yml"
+        line: "launch_template_sg_id: {{ launch_template_sg.group_id }}"
+        create: yes
+        state: present
 
     - name: Criar Launch Template
       community.aws.ec2_launch_template:
@@ -32,12 +87,13 @@
         image_id: "{{ ami_id }}"
         instance_type: "t2.micro"
         key_name: "{{ ec2_key_name }}"
-        security_group_ids: [ "{{ sg_id }}" ]
+        security_group_ids: [ "{{ launch_template_sg.group_id }}" ]
         block_device_mappings:
           - device_name: "/dev/sda1"
             ebs:
               volume_size: 10
               delete_on_termination: true
+        user_data: "{{ user_data_base64 }}"
         state: present
         region: "{{ region }}"
       register: launch_template_result
@@ -47,12 +103,14 @@
         var: launch_template_result
 
     - name: Exportar Launch Template variáveis para launch_template_vars.yml
-      copy:
-        content: |
+      lineinfile:
+        path: "vars/launch_template_vars.yml"
+        line: |
           launch_template_id: "{{ launch_template_result.default_template.launch_template_id }}"
           launch_template_name: "{{ launch_template_result.default_template.launch_template_name }}"
           launch_template_version: "{{ launch_template_result.default_template.version_number }}"
-        dest: "launch_template_vars.yml"
+        create: yes
+        state: present
 
     - name: Carregar novas variáveis de launch_template_vars.yml
       include_vars:
@@ -60,4 +118,4 @@
 
     - name: Variáveis de Launch Template carregadas com sucesso!
       debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template_id }}, LAUNCH_TEMPLATE_NAME: {{ launch_template_name }}, LAUNCH_TEMPLATE_VERSION: {{ launch_template_version }}"
+        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template_id }}, LAUNCH_TEMPLATE_NAME: {{ launch_template_name }}, LAUNCH_TEMPLATE_VERSION: {{ launch_template_version }}, LAUNCH_TEMPLATE_SG_ID: {{ launch_template_sg_id }}"
