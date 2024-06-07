@@ -32,7 +32,7 @@
 
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc && env
+      shell: /bin/bash -c "source ~/.bashrc && env"
       register: shell_output
 
     - name: Setar variáveis de ambiente
@@ -145,7 +145,7 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: source ~/.bashrc
+      shell: /bin/bash -c "source ~/.bashrc"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
