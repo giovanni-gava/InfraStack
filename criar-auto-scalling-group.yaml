@@ -13,14 +13,31 @@
       debug:
         var: shell_output.stdout_lines
 
+    - name: Verificar se as variáveis LAUNCH_TEMPLATE_ID, LAUNCH_TEMPLATE_NAME e LAUNCH_TEMPLATE_VERSION estão presentes
+      fail:
+        msg: "As variáveis LAUNCH_TEMPLATE_ID, LAUNCH_TEMPLATE_NAME ou LAUNCH_TEMPLATE_VERSION não foram encontradas no .bashrc"
+      when: shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | length == 0 or 
+            shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | length == 0 or
+            shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | length == 0
+
+    - name: Verificar se as variáveis SUBNET_ID_AZ1 e SUBNET_ID_AZ2 estão presentes
+      fail:
+        msg: "As variáveis SUBNET_ID_AZ1 ou SUBNET_ID_AZ2 não foram encontradas no .bashrc"
+      when: shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | length == 0 or
+            shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | length == 0
+
     - name: Setar variáveis de ambiente
       set_fact:
-        launch_template_id: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last) | default('') }}"
-        launch_template_name: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last) | default('') }}"
-        launch_template_version: "{{ (shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last) | default('') }}"
-        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last) | default('') }}"
-        subnet_id_az2: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last) | default('') }}"
+        launch_template_id: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_ID=') | list | first | split('=') | last }}"
+        launch_template_name: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_NAME=') | list | first | split('=') | last }}"
+        launch_template_version: "{{ shell_output.stdout_lines | select('search', '^LAUNCH_TEMPLATE_VERSION=') | list | first | split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
+        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Verificar valores das variáveis carregadas
+      debug:
+        msg: "Launch Template ID: {{ launch_template_id }}, Launch Template Name: {{ launch_template_name }}, Launch Template Version: {{ launch_template_version }}, Subnet ID AZ1: {{ subnet_id_az1 }}, Subnet ID AZ2: {{ subnet_id_az2 }}"
 
     - name: Verificar se as variáveis estão definidas
       fail:
@@ -42,7 +59,6 @@
           - key: "Name"
             value: "webserver-asg-instance"
             propagate_at_launch: true
-      
         region: "{{ region }}"
       register: asg
 
