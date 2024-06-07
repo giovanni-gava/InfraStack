@@ -32,14 +32,18 @@
 
   tasks:
     - name: Carregar variáveis de ambiente do .bashrc
-      command: /bin/bash -c "source ~/.bashrc && env"
+      shell: . ~/.bashrc && env
       register: shell_output
+
+    - name: Exibir conteúdo do shell_output
+      debug:
+        var: shell_output.stdout_lines
 
     - name: Setar variáveis de ambiente
       set_fact:
-        vpc_id: "{{ lookup('env', 'VPC_ID') }}"
-        subnet_id_az1: "{{ lookup('env', 'SUBNET_ID_AZ1') }}"
-        subnet_id_az2: "{{ lookup('env', 'SUBNET_ID_AZ2') }}"
+        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
+        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
+        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Exibir variáveis carregadas
@@ -145,8 +149,9 @@
         create: yes
 
     - name: Carregar novas variáveis de ambiente do .bashrc
-      command: /bin/bash -c "source ~/.bashrc"
+      shell: /bin/bash -c "source ~/.bashrc && env"
+      register: new_shell_output
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "Instance ID exportado com sucesso para .bashrc!"
+        msg: "VPC_ID: {{ new_shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}, SUBNET_ID_AZ1: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}, SUBNET_ID_AZ2: {{ new_shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}, REGION: {{ region }}, EC2_INSTANCE_ID: {{ new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}, EC2_KEY_NAME: {{ new_shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}, SG_ID: {{ new_shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
