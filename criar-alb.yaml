@@ -32,8 +32,8 @@
         health_check_protocol: HTTP
         health_check_port: traffic-port
         health_check_path: /
-        health_check_interval_seconds: 30
-        health_check_timeout_seconds: 5
+        health_check_interval: 30
+        health_check_timeout: 5
         healthy_threshold_count: 2
         unhealthy_threshold_count: 2
         target_type: instance
