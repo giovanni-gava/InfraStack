@@ -1,0 +1,6 @@
+vpc_id: "vpc-xxxxxxxx"
+subnet_id_az1: "subnet-xxxxxxxx"
+subnet_id_az2: "subnet-xxxxxxxx"
+subnet_cidr_az1: "10.0.1.0/24"
+subnet_cidr_az2: "10.0.2.0/24"
+region: "us-east-1"
