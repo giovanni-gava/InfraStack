@@ -4,23 +4,17 @@
   gather_facts: no
   collections:
     - amazon.aws
+  vars_files:
+    - ec2_vars.yml
   tasks:
-    - name: Carregar variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
-      register: shell_output
-
-    - name: Exibir conteúdo do shell_output
-      debug:
-        var: shell_output.stdout_lines
-
     - name: Verificar se a variável EC2_INSTANCE_ID está presente
       fail:
-        msg: "EC2_INSTANCE_ID não encontrado no ambiente!"
-      when: shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | length == 0
+        msg: "EC2_INSTANCE_ID não encontrado no arquivo ec2_vars.yml!"
+      when: ec2_instance_id is not defined
 
     - name: Setar variáveis de ambiente
       set_fact:
-        instance_id: "{{ shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}"
+        instance_id: "{{ ec2_instance_id }}"
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se o EC2_INSTANCE_ID está atualizado
@@ -56,22 +50,16 @@
       debug:
         var: ami
 
-    - name: Remover variável AMI_ID existente do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export AMI_ID='
+    - name: Exportar AMI ID para ami_vars.yml
+      copy:
+        content: |
+          ami_id: "{{ ami.image_id }}"
+        dest: "ami_vars.yml"
 
-    - name: Exportar AMI ID para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export AMI_ID={{ ami.image_id }}"
-        create: yes
-
-    - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
-      register: new_shell_output
+    - name: Carregar novas variáveis de ami_vars.yml
+      include_vars:
+        file: "ami_vars.yml"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "AMI_ID: {{ new_shell_output.stdout_lines | select('search', '^AMI_ID=') | list | first | split('=') | last }}"
+        msg: "AMI_ID: {{ ami_id }}"
