@@ -28,7 +28,7 @@
     - name: Criar Auto Scaling Group
       amazon.aws.autoscaling_group:
         name: "webserver-asg"
-        desired_capacity: 2
+        desired_capacity: 1
         min_size: 1
         max_size: 3
         vpc_zone_identifier: "{{ subnet_id_az1 }},{{ subnet_id_az2 }}"

@@ -5,28 +5,26 @@
   collections:
     - community.aws
     - amazon.aws
+  vars_files:
+    - vpc_vars.yml
+    - scaling_group_vars.yml
   tasks:
-    - name: Carregar variáveis de ambiente do .bashrc
-      shell: /bin/bash -c 'source ~/.bashrc && env'
-      register: shell_output
-
-    - name: Exibir conteúdo do shell_output
+    - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
-        var: shell_output.stdout_lines
+        msg: "SG_ID: {{ security_group_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, VPC_ID: {{ vpc_id }}"
 
-    - name: Setar variáveis de ambiente
-      set_fact:
-        security_group_id: "{{ (shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last) | default('') }}"
-        subnet_id_az1: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last) | default('') }}"
-        subnet_id_az2: "{{ (shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last) | default('') }}"
-        asg_name: "{{ (shell_output.stdout_lines | select('search', '^ASG_NAME=') | list | first | split('=') | last) | default('') }}"
-        region: "{{ (lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') | default('')) }}"
-        vpc_id: "{{ (shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last) | default('') }}"
+    - name: Exibir variáveis carregadas de scaling_group_vars.yml
+      debug:
+        msg: "ASG_NAME: {{ asg_name }}"
 
     - name: Verificar se as variáveis estão definidas
       fail:
         msg: "As variáveis security_group_id, subnet_id_az1, subnet_id_az2, asg_name, region ou vpc_id estão vazias!"
-      when: security_group_id == "" or subnet_id_az1 == "" or subnet_id_az2 == "" or asg_name == "" or region == "" or vpc_id == ""
+      when: security_group_id is not defined or subnet_id_az1 is not defined or subnet_id_az2 is not defined or asg_name is not defined or region is not defined or vpc_id is not defined
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Criar Target Group
       community.aws.elb_target_group:
@@ -68,15 +66,16 @@
       debug:
         var: alb
 
-    - name: Exportar Load Balancer DNS name para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        line: "export ALB_DNS_NAME={{ alb.dns_name }}"
-        create: yes
+    - name: Exportar variáveis de Load Balancer para alb_vars.yml
+      copy:
+        content: |
+          alb_dns_name: "{{ alb.dns_name }}"
+        dest: "alb_vars.yml"
 
-    - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c 'source ~/.bashrc'
+    - name: Carregar novas variáveis de alb_vars.yml
+      include_vars:
+        file: "alb_vars.yml"
 
-    - name: Variáveis de ambiente carregadas com sucesso!
+    - name: Variáveis de Load Balancer carregadas com sucesso!
       debug:
-        msg: "ALB_DNS_NAME: {{ lookup('env', 'ALB_DNS_NAME') }}"
+        msg: "ALB_DNS_NAME: {{ alb_dns_name }}"
