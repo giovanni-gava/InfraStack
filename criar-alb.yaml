@@ -11,7 +11,7 @@
   tasks:
     - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
-        msg: "SG_ID: {{ security_group_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, VPC_ID: {{ vpc_id }}"
+        msg: "SG_ID: {{ sg_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, VPC_ID: {{ vpc_id }}"
 
     - name: Exibir variáveis carregadas de scaling_group_vars.yml
       debug:
@@ -19,12 +19,8 @@
 
     - name: Verificar se as variáveis estão definidas
       fail:
-        msg: "As variáveis security_group_id, subnet_id_az1, subnet_id_az2, asg_name, region ou vpc_id estão vazias!"
-      when: security_group_id is not defined or subnet_id_az1 is not defined or subnet_id_az2 is not defined or asg_name is not defined or region is not defined or vpc_id is not defined
-
-    - name: Setar variáveis de ambiente
-      set_fact:
-        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+        msg: "As variáveis sg_id, subnet_id_az1, subnet_id_az2, asg_name, region ou vpc_id estão vazias!"
+      when: sg_id == "" or subnet_id_az1 == "" or subnet_id_az2 == "" or asg_name == "" or region == "" or vpc_id == ""
 
     - name: Criar Target Group
       community.aws.elb_target_group:
@@ -43,7 +39,7 @@
       community.aws.elb_application_lb:
         name: "webserver-alb"
         state: present
-        security_groups: [ "{{ security_group_id }}" ]
+        security_groups: [ "{{ sg_id }}" ]
         subnets: [ "{{ subnet_id_az1 }}", "{{ subnet_id_az2 }}" ]
         scheme: internet-facing
         listeners:
@@ -71,11 +67,3 @@
         content: |
           alb_dns_name: "{{ alb.dns_name }}"
         dest: "alb_vars.yml"
-
-    - name: Carregar novas variáveis de alb_vars.yml
-      include_vars:
-        file: "alb_vars.yml"
-
-    - name: Variáveis de Load Balancer carregadas com sucesso!
-      debug:
-        msg: "ALB_DNS_NAME: {{ alb_dns_name }}"
