@@ -10,7 +10,7 @@
   tasks:
     - name: Exibir variáveis carregadas de ec2_vars.yml
       debug:
-        msg: "EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ security_group_id }}"
+        msg: "EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ sg_id }}"
 
     - name: Exibir variáveis carregadas de ami_vars.yml
       debug:
@@ -18,8 +18,8 @@
 
     - name: Verificar se as variáveis estão definidas
       fail:
-        msg: "As variáveis ami_id, ec2_key_name ou security_group_id não foram encontradas!"
-      when: ami_id is not defined or ec2_key_name is not defined or security_group_id is not defined
+        msg: "As variáveis ami_id, ec2_key_name ou sg_id não foram encontradas!"
+      when: ami_id is not defined or ec2_key_name is not defined or sg_id is not defined
 
     - name: Setar variáveis de ambiente
       set_fact:
@@ -32,7 +32,7 @@
         image_id: "{{ ami_id }}"
         instance_type: "t2.micro"
         key_name: "{{ ec2_key_name }}"
-        security_group_ids: [ "{{ security_group_id }}" ]
+        security_group_ids: [ "{{ sg_id }}" ]
         block_device_mappings:
           - device_name: "/dev/sda1"
             ebs:
