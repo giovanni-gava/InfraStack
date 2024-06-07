@@ -5,8 +5,8 @@
   collections:
     - amazon.aws
   vars_files:
-    - launch_template_vars.yml
-    - vpc_vars.yml
+    - vars/launch_template_vars.yml
+    - vars/vpc_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de launch_template_vars.yml
       debug:
@@ -51,7 +51,7 @@
       copy:
         content: |
           asg_name: "{{ asg.auto_scaling_group_name }}"
-        dest: "scaling_group_vars.yml"
+        dest: "vars/scaling_group_vars.yml"
 
     - name: Carregar novas variáveis de scaling_group_vars.yml
       include_vars:

@@ -5,8 +5,8 @@
   collections:
     - community.aws
   vars_files:
-    - ec2_vars.yml
-    - ami_vars.yml
+    - vars/ec2_vars.yml
+    - vars/ami_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de ec2_vars.yml
       debug:
@@ -56,7 +56,7 @@
 
     - name: Carregar novas variáveis de launch_template_vars.yml
       include_vars:
-        file: "launch_template_vars.yml"
+        file: "vars/launch_template_vars.yml"
 
     - name: Variáveis de Launch Template carregadas com sucesso!
       debug:

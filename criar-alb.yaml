@@ -6,9 +6,9 @@
     - community.aws
     - amazon.aws
   vars_files:
-    - vpc_vars.yml
-    - ec2_vars.yml
-    - scaling_group_vars.yml
+    - vars/vpc_vars.yml
+    - vars/ec2_vars.yml
+    - vars/scaling_group_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
@@ -85,4 +85,4 @@
       copy:
         content: |
           alb_dns_name: "{{ alb.dns_name }}"
-        dest: "alb_vars.yml"
+        dest: "vars/alb_vars.yml"
