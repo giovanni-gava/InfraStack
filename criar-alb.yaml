@@ -7,6 +7,7 @@
     - amazon.aws
   vars_files:
     - vpc_vars.yml
+    - ec2_vars.yml
     - scaling_group_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de vpc_vars.yml
