@@ -4,6 +4,8 @@
   gather_facts: no
   collections:
     - amazon.aws
+  vars_files:
+    - vpc_vars.yml
   vars:
     ec2_instance_type: "t2.micro"
     ec2_image: "ami-04b70fa74e45c3917"  # Substituir pelo ID da AMI Linux desejada
@@ -31,17 +33,6 @@
       sudo docker ps -a
 
   tasks:
-    - name: Carregar variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
-      register: shell_output
-
-    - name: Setar variáveis de ambiente
-      set_fact:
-        vpc_id: "{{ shell_output.stdout_lines | select('search', '^VPC_ID=') | list | first | split('=') | last }}"
-        subnet_id_az1: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ1=') | list | first | split('=') | last }}"
-        subnet_id_az2: "{{ shell_output.stdout_lines | select('search', '^SUBNET_ID_AZ2=') | list | first | split('=') | last }}"
-        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
-
     - name: Exibir variáveis carregadas
       debug:
         msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, REGION: {{ region }}"
@@ -108,25 +99,14 @@
       debug:
         var: ec2
 
-    - name: Remover variáveis existentes do .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        state: absent
-        regexp: '^export EC2_INSTANCE_ID=|^export EC2_KEY_NAME=|^export SG_ID='
-
-    - name: Exportar novas variáveis para .bashrc
-      lineinfile:
-        path: ~/.bashrc
-        create: yes
-        line: |
-          export EC2_INSTANCE_ID={{ ec2.instances[0].instance_id }}
-          export EC2_KEY_NAME={{ ec2_key_name }}
-          export SG_ID={{ sg.group_id }}
-
-    - name: Carregar novas variáveis de ambiente do .bashrc
-      shell: /bin/bash -c "source ~/.bashrc && env"
-      register: new_shell_output
+    - name: Exportar variáveis para o arquivo de variáveis do Ansible
+      copy:
+        content: |
+          ec2_instance_id: "{{ ec2.instances[0].instance_id }}"
+          ec2_key_name: "{{ ec2_key_name }}"
+          sg_id: "{{ sg.group_id }}"
+        dest: "{{ playbook_dir }}/vars/ec2_vars.yml"
 
     - name: Variáveis de ambiente carregadas com sucesso!
       debug:
-        msg: "EC2_INSTANCE_ID: {{ new_shell_output.stdout_lines | select('search', '^EC2_INSTANCE_ID=') | list | first | split('=') | last }}, EC2_KEY_NAME: {{ new_shell_output.stdout_lines | select('search', '^EC2_KEY_NAME=') | list | first | split('=') | last }}, SG_ID: {{ new_shell_output.stdout_lines | select('search', '^SG_ID=') | list | first | split('=') | last }}"
+        msg: "EC2_INSTANCE_ID: {{ ec2.instances[0].instance_id }}, EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ sg.group_id }}"
