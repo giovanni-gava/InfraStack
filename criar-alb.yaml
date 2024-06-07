@@ -81,8 +81,14 @@
       debug:
         var: alb
 
-    - name: Exportar variáveis de Load Balancer para alb_vars.yml
+    - name: Carregar variáveis existentes de alb_vars.yml
+      include_vars:
+        file: "vars/alb_vars.yml"
+      when: lookup('file', 'vars/alb_vars.yml', errors='ignore') is defined
+
+    - name: Atualizar ou adicionar variável alb_dns_name em alb_vars.yml
       copy:
         content: |
           alb_dns_name: "{{ alb.dns_name }}"
+          sg_alb_id: "{{ sg_alb_id | default('') }}"
         dest: "vars/alb_vars.yml"

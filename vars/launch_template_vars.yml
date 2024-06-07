@@ -1,4 +1,4 @@
 launch_template_sg_id: "sg-0e5a0f73331142a2c"
 launch_template_id: "lt-05b547592d1b24f74"
 launch_template_name: "webserver-launch-template"
-launch_template_version: "1"
+launch_template_version: "2"

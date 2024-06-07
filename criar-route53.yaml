@@ -19,7 +19,7 @@
     - name: Criar zona hospedada privada no Route 53
       amazon.aws.route53_zone:
         state: present
-        name: "example.com" # Substitua pelo nome de domínio desejado
+        name: "iacmack.com" # Substitua pelo nome de domínio desejado
         vpc_id: "{{ vpc_id }}" # Adicione o ID da VPC onde a zona privada será criada
         vpc_region: "{{ region }}"
         private_zone: true
