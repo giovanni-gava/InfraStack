@@ -23,14 +23,7 @@
         msg: "As variáveis sg_id, subnet_id_az1, subnet_id_az2, asg_name, region ou vpc_id estão vazias!"
       when: sg_id == "" or subnet_id_az1 == "" or subnet_id_az2 == "" or asg_name == "" or region == "" or vpc_id == ""
 
-    - name: Verificar se o Target Group já existe
-      community.aws.elb_target_group_info:
-        name: "webserver-tg"
-        region: "{{ region }}"
-      register: existing_target_group
-      ignore_errors: yes
-
-    - name: Criar Target Group se não existir
+    - name: Criar Target Group
       community.aws.elb_target_group:
         name: "webserver-tg"
         protocol: HTTP
@@ -47,13 +40,7 @@
         region: "{{ region }}"
         state: present
       register: target_group
-      when: existing_target_group.target_groups is not defined or existing_target_group.target_groups | length == 0
-
-    - name: Usar Target Group existente
-      set_fact:
-        target_group_arn: "{{ existing_target_group.target_groups[0].target_group_arn }}"
-      when: existing_target_group.target_groups is defined and existing_target_group.target_groups | length > 0
-
+  
     - name: Criar Load Balancer
       community.aws.elb_application_lb:
         name: "webserver-alb"

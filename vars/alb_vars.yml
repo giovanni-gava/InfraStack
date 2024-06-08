@@ -1,2 +1,2 @@
-alb_dns_name: "webserver-alb-1082099080.us-east-1.elb.amazonaws.com"
-sg_alb_id: "sg-0451e18efcf9a10a6"
+alb_dns_name: "webserver-alb-385666810.us-east-1.elb.amazonaws.com"
+sg_alb_id: "sg-074ec1c905f1c661f"
