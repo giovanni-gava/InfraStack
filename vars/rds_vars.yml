@@ -1,3 +1,3 @@
-rds_security_group_id: "sg-0f76992033f856ef2"
-rds_subnet_group_name: "webserver-subnet-group"
-rds_endpoint: "{'address': 'webserver-db.c5qi6ow8wp8v.us-east-1.rds.amazonaws.com', 'port': 3306, 'hosted_zone_id': 'Z2R2ITUGPM61AM'}"
+rds_security_group_id: "xxxxxxxxxxxxxxxxxxxxx"
+rds_subnet_group_name: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+rds_endpoint: "{'address': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'port': 3306, 'hosted_zone_id': 'xxxxxxxxxxxxxxxxxxxxxx'}"
