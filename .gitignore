@@ -6,3 +6,4 @@ launch_template_vars.yml
 rds_vars.yml
 scaling_group_vars.yml
 vpc_vars.yml
+ami_vars.yml
