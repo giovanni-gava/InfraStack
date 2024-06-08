@@ -7,6 +7,7 @@
   vars_files:
     - vars/vpc_vars.yml
     - vars/ec2_vars.yml
+    - vars/launch_template_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
@@ -16,13 +17,17 @@
       debug:
         msg: "SG_ID: {{ sg_id }}"
 
+    - name: Exibir variáveis carregadas de launch_template_vars.yml
+      debug:
+        msg: "LAUNCH_TEMPLATE_SG_ID: {{ launch_template_sg_id }}"
+
     - name: Setar região
       set_fact:
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
 
     - name: Verificar se as variáveis estão setadas corretamente
       debug:
-        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ sg_id }}, REGION: {{ region }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ sg_id }}, LAUNCH_TEMPLATE_SG_ID: {{ launch_template_sg_id }}, REGION: {{ region }}"
 
     - name: Criar grupo de segurança para RDS
       amazon.aws.ec2_group:
@@ -48,6 +53,19 @@
             ports:
               - 3306
             group_id: "{{ sg_id }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Adicionar regra de entrada para launch_template_sg_id no grupo de segurança do RDS
+      amazon.aws.ec2_group:
+        name: "{{ rds_sg.group_name }}"
+        description: "Allow access from Launch Template SG"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 3306
+            group_id: "{{ launch_template_sg_id }}"
         region: "{{ region }}"
         state: present
 

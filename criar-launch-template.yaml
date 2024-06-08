@@ -93,47 +93,4 @@
         state: present
       register: launch_template_sg
 
-    - name: Atualizar ou adicionar ID do Security Group em launch_template_vars.yml
-      copy:
-        content: |
-          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
-        dest: "vars/launch_template_vars.yml"
-
-    - name: Criar Launch Template
-      community.aws.ec2_launch_template:
-        name: "webserver-launch-template"
-        version_description: "Initial version"
-        image_id: "{{ ami_id }}"
-        instance_type: "t2.micro"
-        key_name: "{{ ec2_key_name }}"
-        security_group_ids: [ "{{ launch_template_sg.group_id }}" ]
-        block_device_mappings:
-          - device_name: "/dev/sda1"
-            ebs:
-              volume_size: 10
-              delete_on_termination: true
-        user_data: "{{ user_data_base64 }}"
-        state: present
-        region: "{{ region }}"
-      register: launch_template_result
-
-    - name: Exibir detalhes do Launch Template criado
-      debug:
-        var: launch_template_result
-
-    - name: Atualizar ou adicionar variáveis do Launch Template em launch_template_vars.yml
-      copy:
-        content: |
-          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
-          launch_template_id: "{{ launch_template_result.default_template.launch_template_id }}"
-          launch_template_name: "{{ launch_template_result.default_template.launch_template_name }}"
-          launch_template_version: "{{ launch_template_result.default_template.version_number }}"
-        dest: "vars/launch_template_vars.yml"
-
-    - name: Carregar novas variáveis de launch_template_vars.yml
-      include_vars:
-        file: "vars/launch_template_vars.yml"
-
-    - name: Variáveis de Launch Template carregadas com sucesso!
-      debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template_id }}, LAUNCH_TEMPLATE_NAME: {{ launch_template_name }}, LAUNCH_TEMPLATE_VERSION: {{ launch_template_version }}, LAUNCH_TEMPLATE_SG_ID: {{ launch_template_sg_id }}"
+    - name: Atualizar ou adicionar ID do Security Group em launch_template

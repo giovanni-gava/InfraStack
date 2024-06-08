@@ -6,21 +6,35 @@
     - amazon.aws
   vars_files:
     - vars/alb_vars.yml
+    - vars/vpc_vars.yml
   tasks:
     - name: Exibir variáveis carregadas de alb_vars.yml
       debug:
         msg: "ALB_DNS_NAME: {{ alb_dns_name }}"
+
+    - name: Exibir variáveis carregadas de vpc_vars.yml
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}"
 
     - name: Verificar se a variável alb_dns_name está definida
       fail:
         msg: "A variável alb_dns_name não foi encontrada!"
       when: alb_dns_name is not defined
 
+    - name: Verificar se a variável vpc_id está definida
+      fail:
+        msg: "A variável vpc_id não foi encontrada!"
+      when: vpc_id is not defined
+
+    - name: Setar região
+      set_fact:
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
     - name: Criar zona hospedada privada no Route 53
       amazon.aws.route53_zone:
         state: present
         name: "iacmack.com" # Substitua pelo nome de domínio desejado
-        vpc_id: "{{ vpc_id }}" # Adicione o ID da VPC onde a zona privada será criada
+        vpc_id: "{{ vpc_id }}"
         vpc_region: "{{ region }}"
         private_zone: true
       register: route53_zone
