@@ -45,7 +45,7 @@
           sudo apt install -y docker-ce
           sudo systemctl start docker
           sudo systemctl enable docker
-          sudo docker run -p 8080:8080-d springcommunity/spring-framework-petclinic
+          sudo docker run -d -p 80:80 --name nginx nginx
           # Garantir que o SSH esteja rodando
           sudo apt install -y openssh-server
           sudo systemctl enable ssh
@@ -89,10 +89,6 @@
           - proto: tcp
             from_port: 80
             to_port: 80
-            cidr_ip: "0.0.0.0/0"
-          - proto: tcp
-            from_port: 80
-            to_port: 8080
             cidr_ip: "0.0.0.0/0"
         state: present
       register: launch_template_sg

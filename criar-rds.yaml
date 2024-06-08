@@ -1,140 +1,98 @@
 ---
-- name: Criar Launch Template a partir da AMI
+- name: Criar RDS na AWS
   hosts: localhost
   gather_facts: no
   collections:
-    - community.aws
     - amazon.aws
   vars_files:
-    - vars/ec2_vars.yml
-    - vars/ami_vars.yml
-    - vars/alb_vars.yml
     - vars/vpc_vars.yml
+    - vars/ec2_vars.yml
   tasks:
-    - name: Exibir variáveis carregadas de ec2_vars.yml
-      debug:
-        msg: "EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ sg_id }}"
-
-    - name: Exibir variáveis carregadas de ami_vars.yml
-      debug:
-        msg: "AMI_ID: {{ ami_id }}"
-
-    - name: Exibir variáveis carregadas de alb_vars.yml
-      debug:
-        msg: "SG_ALB_ID: {{ sg_alb_id }}"
-
     - name: Exibir variáveis carregadas de vpc_vars.yml
       debug:
-        msg: "VPC_ID: {{ vpc_id }}"
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}"
 
-    - name: Verificar se as variáveis estão definidas
-      fail:
-        msg: "As variáveis ami_id, ec2_key_name, sg_id, sg_alb_id ou vpc_id não foram encontradas!"
-      when: ami_id is not defined or ec2_key_name is not defined or sg_id is not defined or sg_alb_id is not defined or vpc_id is not defined
+    - name: Exibir variáveis carregadas de ec2_vars.yml
+      debug:
+        msg: "SG_ID: {{ sg_id }}"
 
-    - name: Setar variáveis de ambiente
+    - name: Setar região
       set_fact:
         region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
-        user_data_template: |
-          #!/bin/bash
-          sudo apt update -y
-          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-          sudo apt update -y
-          sudo apt install -y docker-ce
-          sudo systemctl start docker
-          sudo systemctl enable docker
-          sudo docker run -d -p 80:80 --name nginx nginx
-          # Garantir que o SSH esteja rodando
-          sudo apt install -y openssh-server
-          sudo systemctl enable ssh
-          sudo systemctl start ssh
-          # Verificar se o Docker está em execução
-          sudo systemctl status docker
-          # Verificar se o container Nginx está em execução
-          sudo docker ps -a
 
-    - name: Codificar user_data_template em Base64
-      set_fact:
-        user_data_base64: "{{ user_data_template | b64encode }}"
+    - name: Verificar se as variáveis estão setadas corretamente
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}, SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}, SG_ID: {{ sg_id }}, REGION: {{ region }}"
 
-    - name: Criar novo Security Group para o Launch Template
+    - name: Criar grupo de segurança para RDS
       amazon.aws.ec2_group:
-        name: "lt-webserver-sg"
-        description: "Security group for Launch Template"
+        name: "rds-security-group"
+        description: "Security group for RDS instance"
         vpc_id: "{{ vpc_id }}"
-        region: "{{ region }}"
         rules:
           - proto: tcp
-            from_port: 80
-            to_port: 80
-            group_id: "{{ sg_alb_id }}"
-        state: present
-      register: launch_template_sg
-
-    - name: Atualizar ou adicionar ID do Security Group em launch_template_vars.yml
-      copy:
-        content: |
-          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
-        dest: "vars/launch_template_vars.yml"
-
-    - name: Criar Launch Template
-      community.aws.ec2_launch_template:
-        name: "webserver-launch-template"
-        version_description: "Initial version"
-        image_id: "{{ ami_id }}"
-        instance_type: "t2.micro"
-        key_name: "{{ ec2_key_name }}"
-        security_group_ids: [ "{{ launch_template_sg.group_id }}" ]
-        block_device_mappings:
-          - device_name: "/dev/sda1"
-            ebs:
-              volume_size: 10
-              delete_on_termination: true
-        user_data: "{{ user_data_base64 }}"
-        state: present
+            ports:
+              - 3306
+            cidr_ip: 0.0.0.0/0
         region: "{{ region }}"
-      register: launch_template_result
+        state: present
+      register: rds_sg
 
-    - name: Exibir detalhes do Launch Template criado
+    - name: Adicionar regra de entrada para SG_ID no grupo de segurança do RDS
+      amazon.aws.ec2_group:
+        name: "{{ rds_sg.group_name }}"
+        description: "Allow access from SG_ID"
+        vpc_id: "{{ vpc_id }}"
+        rules:
+          - proto: tcp
+            ports:
+              - 3306
+            group_id: "{{ sg_id }}"
+        region: "{{ region }}"
+        state: present
+
+    - name: Criar ou atualizar DB Subnet Group
+      amazon.aws.rds_subnet_group:
+        name: "webserver-subnet-group"
+        description: "Subnet group for RDS instances"
+        subnets:
+          - "{{ subnet_id_az1 }}"
+          - "{{ subnet_id_az2 }}"
+        region: "{{ region }}"
+        state: present
+      register: db_subnet_group
+
+    - name: Exibir detalhes do DB Subnet Group criado ou atualizado
       debug:
-        var: launch_template_result
+        var: db_subnet_group
 
-    - name: Atualizar ou adicionar variáveis do Launch Template em launch_template_vars.yml
-      copy:
-        content: |
-          launch_template_sg_id: "{{ launch_template_sg.group_id }}"
-          launch_template_id: "{{ launch_template_result.default_template.launch_template_id }}"
-          launch_template_name: "{{ launch_template_result.default_template.launch_template_name }}"
-          launch_template_version: "{{ launch_template_result.default_template.version_number }}"
-        dest: "vars/launch_template_vars.yml"
-
-    - name: Carregar novas variáveis de launch_template_vars.yml
-      include_vars:
-        file: "vars/launch_template_vars.yml"
-
-    - name: Variáveis de Launch Template carregadas com sucesso!
-      debug:
-        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template_id }}, LAUNCH_TEMPLATE_NAME: {{ launch_template_name }}, LAUNCH_TEMPLATE_VERSION: {{ launch_template_version }}, LAUNCH_TEMPLATE_SG_ID: {{ launch_template_sg_id }}"
-
-    - name: Criar RDS
+    - name: Criar RDS instance
       amazon.aws.rds_instance:
-        db_instance_identifier: "mydb"
+        db_instance_identifier: "webserver-db"
+        db_name: "webserverdb"
         allocated_storage: 20
-        db_instance_class: "db.t2.micro"
-        engine: "mysql"
+        db_instance_class: db.t3.micro
+        engine: mysql
         master_username: "admin"
         master_user_password: "password"
-        vpc_security_group_ids: [ "{{ sg_id }}" ]
-        db_subnet_group_name: "my-subnet-group"
+        vpc_security_group_ids:
+          - "{{ rds_sg.group_id }}"
+        db_subnet_group_name: "{{ db_subnet_group.subnet_group.db_subnet_group_name }}"
+        multi_az: no
         region: "{{ region }}"
         state: present
+        tags:
+          Name: "webserver-db"
       register: rds
+
+    - name: Exibir detalhes da RDS criada
+      debug:
+        var: rds
 
     - name: Exportar variáveis criadas para rds_vars.yml
       copy:
         content: |
-          db_instance_identifier: "{{ rds.db_instance_identifier }}"
-          db_name: "{{ rds.db_name }}"
+          rds_security_group_id: "{{ rds_sg.group_id }}"
+          rds_subnet_group_name: "{{ db_subnet_group.subnet_group.db_subnet_group_name }}"
+          rds_endpoint: "{{ rds.endpoint }}"
         dest: "vars/rds_vars.yml"
