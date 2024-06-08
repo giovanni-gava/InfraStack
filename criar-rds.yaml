@@ -46,7 +46,7 @@
     - name: Adicionar regra de entrada para SG_ID no grupo de segurança do RDS
       amazon.aws.ec2_group:
         name: "{{ rds_sg.group_name }}"
-        description: "Allow access from SG_ID"
+        description: "Allow access from WebServer"
         vpc_id: "{{ vpc_id }}"
         rules:
           - proto: tcp
