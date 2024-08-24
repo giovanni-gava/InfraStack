@@ -1,0 +1,1 @@
+bucket_name = "aws-mack-s3-teste1-giovanni"
