@@ -10,6 +10,6 @@ resource "aws_s3_object" "index_html" {
 }
 
 
-resource "aws_s3_tfstate" "backend-tf" {
+resource "aws_s3_bucket" "backend-tf" {
   bucket = var.aws_s3_tfstate
 }
