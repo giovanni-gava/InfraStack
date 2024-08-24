@@ -3,6 +3,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 4.16"
+      access_key = var.access_key
+      secret_key = var.secret_key
+      session_token = var.secret
+      region = var.region
     }
   }
 
