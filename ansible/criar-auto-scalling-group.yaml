@@ -1,0 +1,64 @@
+---
+- name: Criar Auto Scaling Group
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - amazon.aws
+  vars_files:
+    - vars/launch_template_vars.yml
+    - vars/vpc_vars.yml
+    - vars/ami_vars.yml
+  tasks:
+    - name: Exibir variáveis carregadas de launch_template_vars.yml
+      debug:
+        msg: "LAUNCH_TEMPLATE_ID: {{ launch_template_id }}, LAUNCH_TEMPLATE_NAME: {{ launch_template_name }}, LAUNCH_TEMPLATE_VERSION: {{ launch_template_version }}"
+
+    - name: Exibir variáveis carregadas de vpc_vars.yml
+      debug:
+        msg: "SUBNET_ID_AZ1: {{ subnet_id_az1 }}, SUBNET_ID_AZ2: {{ subnet_id_az2 }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis launch_template_id, launch_template_name, launch_template_version, subnet_id_az1 ou subnet_id_az2 não foram encontradas!"
+      when: launch_template_id is not defined or launch_template_name is not defined or launch_template_version is not defined or subnet_id_az1 is not defined or subnet_id_az2 is not defined
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+
+    - name: Criar Auto Scaling Group
+      amazon.aws.autoscaling_group:
+        name: "webserver-asg"
+        desired_capacity: 1
+        min_size: 1
+        max_size: 5
+        vpc_zone_identifier: "{{ subnet_id_az1 }},{{ subnet_id_az2 }}"
+        launch_template:
+          launch_template_id: "{{ launch_template_id }}"
+          launch_template_name: "{{ launch_template_name }}"
+          version: "{{ launch_template_version }}"
+        tags:
+          - key: "Name"
+            value: "webserver"
+            propagate_at_launch: true
+        region: "{{ region }}"
+      register: asg
+
+    - name: Exibir detalhes do Auto Scaling Group criado
+      debug:
+        var: asg
+
+    - name: Exportar variáveis de Auto Scaling Group para scaling_group_vars.yml
+      copy:
+        content: |
+          asg_name: "{{ asg.auto_scaling_group_name }}"
+        dest: "vars/scaling_group_vars.yml"
+
+    - name: Carregar novas variáveis de scaling_group_vars.yml
+      include_vars:
+        file: "vars/scaling_group_vars.yml"
+
+    - name: Variáveis de Auto Scaling Group carregadas com sucesso!
+      debug:
+        msg: "ASG_NAME: {{ asg_name }}"
+

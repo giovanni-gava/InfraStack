@@ -1,6 +1,0 @@
-vpc_id: "xxxxxxxxxxxxxxxxxxxxxxxxx"
-subnet_id_az1: "xxxxxxxxxxxxxxxxxxxxxxxxxx"
-subnet_id_az2: "xxxxxxxxxxxxxxxxxxxxxxxx"
-subnet_cidr_az1: "xxxxxxxxxxxxxxxxxxxxxxx"
-subnet_cidr_az2: "xxxxxxxxxxxxxxxxxxxxxxx"
-region: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -1,0 +1,96 @@
+---
+- name: Criar Launch Template a partir da AMI
+  hosts: localhost
+  gather_facts: no
+  collections:
+    - community.aws
+    - amazon.aws
+  vars_files:
+    - vars/ec2_vars.yml
+    - vars/ami_vars.yml
+    - vars/alb_vars.yml
+    - vars/vpc_vars.yml
+  tasks:
+    - name: Exibir variáveis carregadas de ec2_vars.yml
+      debug:
+        msg: "EC2_KEY_NAME: {{ ec2_key_name }}, SG_ID: {{ sg_id }}"
+
+    - name: Exibir variáveis carregadas de ami_vars.yml
+      debug:
+        msg: "AMI_ID: {{ ami_id }}"
+
+    - name: Exibir variáveis carregadas de alb_vars.yml
+      debug:
+        msg: "SG_ALB_ID: {{ sg_alb_id }}"
+
+    - name: Exibir variáveis carregadas de vpc_vars.yml
+      debug:
+        msg: "VPC_ID: {{ vpc_id }}"
+
+    - name: Verificar se as variáveis estão definidas
+      fail:
+        msg: "As variáveis ami_id, ec2_key_name, sg_id, sg_alb_id ou vpc_id não foram encontradas!"
+      when: ami_id is not defined or ec2_key_name is not defined or sg_id is not defined or sg_alb_id is not defined or vpc_id is not defined
+
+    - name: Setar variáveis de ambiente
+      set_fact:
+        region: "{{ lookup('ini', 'AWS_DEFAULT_REGION section=default file=~/.aws/credentials') }}"
+        user_data_template: |
+          #!/bin/bash
+          sudo apt update -y
+          sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt update -y
+          sudo apt install -y docker-ce
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          sudo docker run -d -p 80:80 --name nginx nginx
+          # Garantir que o SSH esteja rodando
+          sudo apt install -y openssh-server
+          sudo systemctl enable ssh
+          sudo systemctl start ssh
+          # Verificar se o Docker está em execução
+          sudo systemctl status docker
+          # Verificar se o container Nginx está em execução
+          sudo docker ps -a
+          # Adicionar logs para depuração
+          echo "Docker instalado e iniciado" >> /var/log/user-data.log
+          echo "Estado do Docker:" >> /var/log/user-data.log
+          sudo systemctl status docker >> /var/log/user-data.log
+          echo "Containers em execução:" >> /var/log/user-data.log
+          sudo docker ps -a >> /var/log/user-data.log
+          # Tentar reiniciar o container Nginx se ele não estiver rodando
+          if [ "$(sudo docker ps -a | grep nginx | grep Exited)" ]; then
+              echo "Tentando reiniciar o container Nginx" >> /var/log/user-data.log
+              sudo docker start nginx
+              echo "Estado após tentativa de reiniciar:" >> /var/log/user-data.log
+              sudo docker ps -a >> /var/log/user-data.log
+              # Capturar logs do container para depuração
+              echo "Logs do container Nginx:" >> /var/log/user-data.log
+              sudo docker logs nginx >> /var/log/user-data.log
+          fi
+
+    - name: Codificar user_data_template em Base64
+      set_fact:
+        user_data_base64: "{{ user_data_template | b64encode }}"
+
+    - name: Criar novo Security Group para o Launch Template
+      amazon.aws.ec2_group:
+        name: "lt-webserver-sg"
+        description: "Security group for Launch Template"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            group_id: "{{ sg_alb_id }}"
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: "0.0.0.0/0"
+        state: present
+      register: launch_template_sg
+
+    - name: Atualizar ou adicionar ID do Security Group em launch_template
