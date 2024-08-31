@@ -1,3 +1,3 @@
-output "aws_s3_bucket_mack" {
-    value = aws_s3_bucket.terraform-bucket-posmack.arn
+output "s3-bucket-arn" {
+    value = aws_s3_bucket.bucket-mack.arn
 }
