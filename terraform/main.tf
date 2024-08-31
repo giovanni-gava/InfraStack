@@ -6,6 +6,6 @@ module "bucket" {
 
 resource "aws_s3_object" "index_html" {
     key = "index_html"
-    bucket = module.bucket.s3-bucket-arn
+    bucket = module.bucket.s3-bucket-id
     source = "./files/index.html"
 }
