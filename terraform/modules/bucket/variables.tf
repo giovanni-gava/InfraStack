@@ -13,7 +13,4 @@ variable "bucket_prefix" {
   
 }
 
-variable "aws_s3_tfstate" {
-  
-}
 
