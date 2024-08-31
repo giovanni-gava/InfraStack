@@ -1,5 +1,5 @@
 module "bucket" {
-    source = "https://github.com/giovanni-gava/iac-mack/tree/37f96812158a71625d615489d056605e090687c1/terraform/modules/bucket"
+    source = "https://github.com/giovanni-gava/iac-mack/tree/main/terraform/modules/bucket"
     bucket_name = "aws-s3-mack-teste-1"
     region = "us-east-1"
 }
