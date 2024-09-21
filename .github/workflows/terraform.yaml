@@ -45,8 +45,9 @@ jobs:
       - name: Read destroy.json
         id: read-destroy
         run: |
-          DESTROY="$(jq -r '.${{ inputs.enviroment}}' ./infra/destroy.json)"
+          DESTROY="$(jq -r '.${{ inputs.environment }}' ./infra/destroy.json)"
           echo "destroy=$(echo $DESTROY)" >> $GITHUB_OUTPUT
+
 
       - name: Terraform Init
         run: |
