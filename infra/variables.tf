@@ -7,3 +7,8 @@ variable "pipe_region" {
   type = string
   description = "region to aws provider"
 }
+
+variable "bucket_name" {
+  type = string
+  
+}

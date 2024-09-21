@@ -1,6 +1,6 @@
 module "bucket" {
     source = "./modules/bucket"
-    bucket_name = "aws-mack-s3-actions-tf-giovanni"
+    bucket_name = var.bucket_name
     region = "us-east-1"
 }
 
