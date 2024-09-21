@@ -70,14 +70,14 @@ jobs:
 
 
       - name: Terraform Plan
-        if: steps.read-destroy.outputs.destroy = 'true'
+        if: steps.read-destroy.outputs.destroy != 'true'
         id: terraform-plan
         run: cd infra &&
           terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }} &&
           terraform plan -var-file="./env/${{ inputs.environment }}/terraform.tfvars" -out="${{ inputs.environment }}.plan"
 
       - name: Terraform Apply
-        if: steps.read-destroy.outputs.destroy = 'true'
+        if: steps.read-destroy.outputs.destroy != 'true'
         id: terraform-apply
         run: cd infra &&
           terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }} &&
