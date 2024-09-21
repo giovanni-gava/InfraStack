@@ -14,6 +14,6 @@ jobs:
     with:
       environment: prod
       aws-region: "us-east-1"
-      aws-state-s3-bucket: "aws-mack-s3-tfstate-actions-pipeline"
+      aws-state-s3-bucket: "aws-prd-mack-s3-tfstate-actions-pipeline"
       aws-lock-table: "aws-mack-dyn-github-lock-table"
       aws-assume-role-arn: "arn:aws:iam::211125430322:role/aws-mack-role-github-actions-giovanni"
